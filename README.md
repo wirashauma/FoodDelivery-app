@@ -1,63 +1,71 @@
-📦 Titipin App: Solusi Jastip & Food Delivery Kampus
-Titipin App adalah aplikasi Food Delivery dan Jasa Titip (Jastip) berbasis mobile yang dirancang khusus untuk lingkungan kampus. Aplikasi ini mempertemukan mahasiswa yang ingin memesan makanan dengan mahasiswa lain yang bersedia menjadi kurir (deliverer).
+# 🛵 Titipin App: Campus Food Delivery System
 
-"Menghubungkan kebutuhan konsumsi mahasiswa dengan kemudahan pengantaran dalam satu genggaman."
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
 
-📱 Fitur Unggulan
-Dual Role System: Satu aplikasi untuk dua peran berbeda; sebagai Customer untuk memesan atau sebagai Deliverer untuk mengambil orderan.
+**Titipin App** adalah platform *food delivery* lintas platform yang dirancang khusus untuk ekosistem kampus. Aplikasi ini menghubungkan mahasiswa yang membutuhkan makanan (Customer) dengan mahasiswa yang ingin mencari penghasilan tambahan sebagai kurir (Deliverer) dalam satu ekosistem *real-time*.
 
-Real-time Communication: Fitur chat langsung antara pemesan dan kurir menggunakan integrasi Socket.IO.
+> *"Dari mahasiswa, oleh mahasiswa, untuk mahasiswa."*
 
-Order Management: Sistem manajemen pesanan yang efisien mulai dari Available Orders, Active Orders, hingga riwayat pesanan selesai.
+---
 
-Secure Authentication: Keamanan akun menggunakan JWT (JSON Web Token) dan penyimpanan token aman melalui flutter_secure_storage.
+## 🌟 Key Features (Fitur Utama)
 
-Role-Based Routing: Navigasi otomatis yang menyesuaikan tampilan dashboard berdasarkan peran pengguna saat login.
+### 👤 Dual-Role System
+Aplikasi ini mendukung dua peran dalam satu akun dengan pengalaman UX yang berbeda:
+* **Customer:** Menjelajah menu kantin, mengelola keranjang belanja, melakukan pemesanan, dan melacak status pesanan.
+* **Deliverer:** Dashboard khusus untuk melihat pesanan masuk, menerima/menolak *job* pengiriman, dan update status pesanan.
 
-🛠️ Tech Stack (Teknologi)
-Aplikasi ini dibangun menggunakan arsitektur modern untuk menjamin performa dan skalabilitas:
+### 💬 Real-Time Interaction
+* **Live Chat:** Komunikasi instan antara Customer dan Deliverer menggunakan **Socket.IO**.
+* **Status Updates:** Notifikasi status pesanan (Diterima, Diproses, Diantar) secara *real-time* tanpa perlu refresh halaman.
 
-Frontend (Mobile): Flutter & Dart.
+### 🔐 Enterprise-Grade Security
+* **JWT Authentication:** Login aman dengan token-based access control.
+* **Secure Storage:** Token dan data sensitif disimpan menggunakan `flutter_secure_storage` (Keychain di iOS / Keystore di Android).
+* **Role-Based Routing:** Navigasi otomatis yang membedakan hak akses antarmuka Customer dan Deliverer.
 
-Backend & API: Node.js dengan framework Express.js.
+---
 
-Database & ORM: PostgreSQL dengan Prisma ORM.
+## 🛠️ Tech Stack
 
-Real-time Engine: Socket.IO untuk fitur chat instan.
+Proyek ini dibangun menggunakan arsitektur *Full-Stack* modern:
 
-State Management: (Sesuaikan dengan yang kamu pakai, misal: Provider/Bloc/Riverpod).
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Mobile App** | **Flutter (Dart)** | Cross-platform UI, Provider/Bloc State Management |
+| **Backend API** | **Node.js & Express** | RESTful API Architecture |
+| **Database** | **PostgreSQL** | Relational Database Management System |
+| **ORM** | **Prisma** | Type-safe database client & migration tool |
+| **Real-time** | **Socket.IO** | WebSocket protocol for live chat & updates |
+| **Security** | **Bcrypt & JWT** | Hashing password & Session management |
 
-Security: Bcrypt untuk hashing password dan JWT untuk otorisasi.
+---
 
-📂 Struktur Proyek
-Plaintext
+## 🚀 Installation & Setup
 
-FoodDelivery-app/
-├── backend/           # API Server, Database Schema, & Socket Logic
-│   ├── src/           # Controller, Routes, & Middleware
-│   └── prisma/        # Database Migration & Models
-└── frontend/          # Mobile App (Flutter)
-    ├── lib/           # UI Features, Data Models, & State Management
-    └── assets/        # Images, Icons, & Fonts
-🚀 Cara Menjalankan (Installation)
-Ikuti langkah-langkah berikut untuk menjalankan proyek di lingkungan lokal Anda:
+Proyek ini terdiri dari dua bagian: Server (Backend) dan Client (Mobile).
 
-1. Persiapan Backend
-Bash
+### Prasyarat
+* Node.js & npm
+* Flutter SDK
+* PostgreSQL Database
 
+### 1. Setup Backend (Server)
+```bash
+# Masuk ke folder server (sesuaikan nama folder backend Anda)
 cd backend
+
+# Install dependencies
 npm install
-# Konfigurasi .env (DATABASE_URL & JWT_SECRET)
-npx prisma migrate dev
-npm start
-2. Persiapan Frontend
-Bash
 
-cd frontend
-flutter pub get
-# Pastikan emulator atau perangkat fisik sudah terhubung
-flutter run
-👨‍💻 Dikembangkan Oleh
-Wira Shauma Ardhana (NIM: 23076023)
+# Setup Environment Variable
+# Buat file .env dan isi konfigurasi DB (DATABASE_URL, JWT_SECRET, dll)
 
-Pendidikan Teknik Informatika, Universitas Negeri Padang
+# Jalankan Migrasi Database (Prisma)
+npx prisma migrate dev --name init
+
+# Jalankan Server
+npm run start
