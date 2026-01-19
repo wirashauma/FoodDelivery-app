@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  DELIVERER
+}
+
+enum OrderStatus {
+  WAITING_FOR_OFFERS
+  OFFER_ACCEPTED
+  ON_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+model orders {
+  id           Int         @id @default(autoincrement())
+  item_id      String      @db.VarChar(255)
+  quantity     Int
+  destination  String      @db.VarChar(255)
+  status       OrderStatus @default(WAITING_FOR_OFFERS)
+  created_at   DateTime?   @default(now()) @db.Timestamp(6)
+  user_id      Int
+  user         users       @relation("CustomerOrders", fields: [user_id], references: [user_id])
+  deliverer_id Int?
+  deliverer    users?      @relation("DeliveredOrders", fields: [deliverer_id], references: [user_id])
+  final_fee    Int?
+  offers       Offer[]
+  messages     Message[] // <-- TAMBAHKAN RELASI KE CHAT
+}
+
+model users {
+  user_id       Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  password_hash String    @db.VarChar(255)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  role          Role      @default(USER)
+  nama          String?   @db.VarChar(100)
+  tgl_lahir     DateTime? @db.Date
+  no_hp         String?   @db.VarChar(20)
+  alamat        String?   @db.Text
+  foto_profil   String?   @db.Text
+
+  orders          orders[]  @relation("CustomerOrders")
+  deliveredOrders orders[]  @relation("DeliveredOrders")
+  offers          Offer[]
+  messages        Message[] // <-- TAMBAHKAN RELASI KE CHAT
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  nama        String   @db.VarChar(255)
+  deskripsi   String   @db.Text
+  harga       Int
+  imageUrl    String   @db.Text
+  kategori    String   @db.VarChar(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Offer {
+  id           Int      @id @default(autoincrement())
+  fee          Int
+  created_at   DateTime @default(now())
+  order_id     Int
+  order        orders   @relation(fields: [order_id], references: [id])
+  deliverer_id Int
+  deliverer    users    @relation(fields: [deliverer_id], references: [user_id])
+
+  @@unique([order_id, deliverer_id])
+}
+
+// --- TAMBAHKAN MODEL BARU DI BAWAH INI ---
+model Message {
+  id         Int      @id @default(autoincrement())
+  text       String   @db.Text
+  created_at DateTime @default(now())
+
+  // Relasi ke Order (sebagai "room")
+  order_id   Int
+  order      orders   @relation(fields: [order_id], references: [id])
+
+  // Relasi ke User (siapa pengirimnya)
+  sender_id  Int
+  sender     users    @relation(fields: [sender_id], references: [user_id])
+}

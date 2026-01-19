@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "10666150647",
+    "project_id": "titipin-app",
+    "storage_bucket": "titipin-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10666150647:android:549086564bff8059dd21f2",
+        "android_client_info": {
+          "package_name": "com.example.tugasakhir"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANtAYIFwXSn3keJg1ffwDNvWCfvI1XueI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
