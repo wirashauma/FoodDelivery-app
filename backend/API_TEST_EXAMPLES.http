@@ -1,0 +1,187 @@
+### REST Client Testing
+# Rename this to test.http and open with REST Client extension in VS Code
+
+### Variables
+@baseUrl = http://localhost:3000/api
+@token = your-jwt-token-here
+@orderId = 1
+
+---
+
+## 1. AUTHENTICATION
+
+### Register as Customer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "customer@test.com",
+  "password": "password123",
+  "role": "USER"
+}
+
+### Register as Deliverer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "deliverer@test.com",
+  "password": "password123",
+  "role": "DELIVERER"
+}
+
+### Login as Customer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@test.com",
+  "password": "password123"
+}
+
+### Login as Deliverer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "deliverer@test.com",
+  "password": "password123"
+}
+
+---
+
+## 2. CUSTOMER ORDERS
+
+### Create Order (Customer)
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-Platform: mobile
+
+{
+  "itemId": 1,
+  "quantity": 2,
+  "destination": "Jalan Merdeka No. 123, Jakarta"
+}
+
+### Get My Order History (Customer)
+GET {{baseUrl}}/orders/my-history
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+### Get Order Offers
+GET {{baseUrl}}/orders/{{orderId}}/offers
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+---
+
+## 3. DELIVERER - AVAILABLE ORDERS
+
+### Get Available Orders (Deliverer)
+GET {{baseUrl}}/orders/available
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+---
+
+## 4. DELIVERER - ORDER MANAGEMENT
+
+### Accept Order (Deliverer)
+POST {{baseUrl}}/orders/{{orderId}}/accept
+Authorization: Bearer {{token}}
+X-Platform: mobile
+Content-Type: application/json
+
+{}
+
+### Reject Order (Deliverer)
+POST {{baseUrl}}/orders/{{orderId}}/reject
+Authorization: Bearer {{token}}
+X-Platform: mobile
+Content-Type: application/json
+
+{
+  "reason": "Lokasi terlalu jauh"
+}
+
+### Get Active Orders (Deliverer)
+GET {{baseUrl}}/orders/deliverer/active
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+### Get Completed Orders (Deliverer)
+GET {{baseUrl}}/orders/deliverer/completed?limit=20&offset=0
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+---
+
+## 5. DELIVERER - DASHBOARD
+
+### Get Dashboard Stats (Deliverer)
+GET {{baseUrl}}/orders/deliverer/dashboard/stats
+Authorization: Bearer {{token}}
+X-Platform: mobile
+
+---
+
+## 6. ORDER STATUS
+
+### Update Order Status
+POST {{baseUrl}}/orders/{{orderId}}/update-status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+---
+
+## TESTING FLOW
+
+### Step 1: Register and Login
+1. POST /auth/register (CUSTOMER)
+2. POST /auth/login (CUSTOMER) - Get token
+3. POST /auth/register (DELIVERER)
+4. POST /auth/login (DELIVERER) - Get another token
+
+### Step 2: Customer Creates Order
+1. POST /orders (CUSTOMER token) - Create order
+2. Check response for order ID
+
+### Step 3: Deliverer Views Available
+1. GET /orders/available (DELIVERER token)
+2. Should see the order created in step 2
+
+### Step 4: Deliverer Accepts Order
+1. POST /orders/{orderId}/accept (DELIVERER token)
+2. Status should change to ACCEPTED_BY_DELIVERER
+
+### Step 5: Check Dashboard
+1. GET /orders/deliverer/dashboard/stats (DELIVERER token)
+2. Should see activeOrders count increased
+
+### Step 6: Get Active Orders
+1. GET /orders/deliverer/active (DELIVERER token)
+2. Should see the accepted order in the list
+
+### Step 7: Complete Order
+1. POST /orders/{orderId}/update-status (status: COMPLETED)
+2. Order should move to completed list
+
+### Step 8: Check Completed Orders
+1. GET /orders/deliverer/completed (DELIVERER token)
+2. Should see the order in completed list
+
+---
+
+## NOTES
+
+- Replace `{{baseUrl}}` with actual API URL
+- Replace `{{token}}` with actual JWT token from login response
+- Replace `{{orderId}}` with actual order ID from create/get response
+- X-Platform header is optional but recommended for tracking
+- All deliverer endpoints require DELIVERER role in JWT
+- All customer endpoints require USER role in JWT

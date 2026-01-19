@@ -74,12 +74,15 @@ exports.login = async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Email atau password salah' });
 
     // <-- MODIFIKASI: Payload disesuaikan untuk AuthGate di Flutter
-    // Ini akan membuat token berisi: { "user": { "id": 123, "role": "USER" }, "iat": ..., "exp": ... }
+    // Ini akan membuat token berisi: { "user": { "id": 123, "role": "USER" }, "platform": "mobile", "iat": ..., "exp": ... }
+    // [ENHANCEMENT] Include platform information in token
     const payload = {
       user: {
         id: user.user_id, // Gunakan user_id dari database
         role: user.role, // Masukkan role
+        email: user.email, // Add email to token
       },
+      platform: req.platform || 'mobile', // Include platform (default mobile for safety)
     };
     
     // Logika signing token Anda sudah benar, kita hanya mengganti payload-nya
@@ -99,6 +102,11 @@ exports.login = async (req, res) => {
       message: 'Login berhasil!',
       accessToken,
       refreshToken,
+      user: {
+        id: user.user_id,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);

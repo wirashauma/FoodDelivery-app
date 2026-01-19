@@ -21,6 +21,12 @@ const io = new Server(server, { // Inisialisasi Socket.IO
 
 app.use(express.json());
 
+// [NEW] Import platform detection middleware
+const { detectPlatform } = require('./middleware/platformMiddleware');
+
+// [NEW] Apply platform detection to all requests
+app.use(detectPlatform);
+
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const productRoutes = require('./routes/product');

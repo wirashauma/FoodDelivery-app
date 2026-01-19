@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:titipin_app/features/deliverer/screens/deliverer_dashboard_screen.dart'; // [NEW] Dashboard
 import 'package:titipin_app/features/deliverer/screens/available_orders_screen.dart';
-import 'package:titipin_app/features/deliverer/screens/active_orders_screen.dart'; // 1. IMPORT FILE BARU
+import 'package:titipin_app/features/deliverer/screens/active_orders_screen.dart';
 import 'package:titipin_app/features/profile/screens/profile_view_screen.dart';
 import 'package:titipin_app/features/chat/screens/deliverer_chat_list_screen.dart';
 
@@ -14,12 +15,13 @@ class DelivererMainScreen extends StatefulWidget {
 class _DelivererMainScreenState extends State<DelivererMainScreen> {
   int _selectedIndex = 0;
 
-  // 2. PERBARUI DAFTAR HALAMAN (MENJADI 4 HALAMAN)
+  // [UPDATED] Added dashboard as first screen
   static const List<Widget> _pages = <Widget>[
-    AvailableOrdersScreen(), // Tab 0: Pekerjaan tersedia
-    ActiveOrdersScreen(), // Tab 1: Pekerjaan yang sedang diantar
-    DelivererChatListScreen(), // Tab 2: Pesan/Chat aktif
-    ProfileViewScreen(), // Tab 3: Halaman profil
+    DelivererDashboardScreen(), // Tab 0: Dashboard
+    AvailableOrdersScreen(), // Tab 1: Pekerjaan tersedia
+    ActiveOrdersScreen(), // Tab 2: Pekerjaan yang sedang diantar
+    DelivererChatListScreen(), // Tab 3: Pesan/Chat aktif
+    ProfileViewScreen(), // Tab 4: Halaman profil
   ];
 
   void _onItemTapped(int index) {
@@ -33,16 +35,20 @@ class _DelivererMainScreenState extends State<DelivererMainScreen> {
     return Scaffold(
       body: _pages.elementAt(_selectedIndex),
 
-      // 3. PERBARUI BOTTOMNAVIGATIONBAR (MENJADI 4 ITEM)
+      // [UPDATED] Added dashboard tab to bottom navigation
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // Mencegah item bergeser
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt_outlined), // Ikon untuk daftar pekerjaan
+            icon: Icon(Icons.dashboard_outlined),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt_outlined),
             label: 'Pekerjaan',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.delivery_dining), // Ikon untuk pekerjaan aktif
+            icon: Icon(Icons.delivery_dining),
             label: 'Aktif',
           ),
           BottomNavigationBarItem(
@@ -55,8 +61,8 @@ class _DelivererMainScreenState extends State<DelivererMainScreen> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFFE53935), // Warna item yang aktif
-        unselectedItemColor: Colors.grey, // Warna item yang tidak aktif
+        selectedItemColor: const Color(0xFF10B981), // [UPDATED] Green color
+        unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
     );
