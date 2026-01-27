@@ -37,7 +37,7 @@ Proyek ini dibangun menggunakan arsitektur *Full-Stack* modern:
 | :--- | :--- | :--- |
 | **Mobile App** | **Flutter (Dart)** | Cross-platform UI, Provider/Bloc State Management |
 | **Backend API** | **Node.js & Express** | RESTful API Architecture |
-| **Database** | **PostgreSQL** | Relational Database Management System |
+| **Database** | **PostgreSQL (Supabase)** | Managed PostgreSQL with Connection Pooling |
 | **ORM** | **Prisma** | Type-safe database client & migration tool |
 | **Real-time** | **Socket.IO** | WebSocket protocol for live chat & updates |
 | **Security** | **Bcrypt & JWT** | Hashing password & Session management |
@@ -51,7 +51,7 @@ Proyek ini terdiri dari dua bagian: Server (Backend) dan Client (Mobile).
 ### Prasyarat
 * Node.js & npm
 * Flutter SDK
-* PostgreSQL Database
+* Supabase Account (Free tier available)
 
 ### 1. Setup Backend (Server)
 ```bash
@@ -62,10 +62,14 @@ cd backend
 npm install
 
 # Setup Environment Variable
-# Buat file .env dan isi konfigurasi DB (DATABASE_URL, JWT_SECRET, dll)
+# Lihat file .env.example dan buat file .env dengan kredensial Supabase Anda
+# Atau ikuti panduan lengkap di SUPABASE_SETUP.md
 
-# Jalankan Migrasi Database (Prisma)
-npx prisma migrate dev --name init
+# Generate Prisma Client
+npx prisma generate
+
+# Push schema ke database Supabase
+npx prisma db push
 
 # Jalankan Server
-npm run start
+npm run dev

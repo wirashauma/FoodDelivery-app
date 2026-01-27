@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:titipin_app/features/orders/screens/waiting_for_offers_screen.dart';
 import 'package:intl/intl.dart'; // Untuk format tanggal
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -29,7 +30,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       throw Exception('Token tidak ditemukan. Silakan login ulang.');
     }
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/orders/my-history');
+    final url = Uri.parse(ApiConfig.myOrdersEndpoint);
     final response = await http.get(
       url,
       headers: {

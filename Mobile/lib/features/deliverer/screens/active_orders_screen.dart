@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart'; // <-- 1. IMPORT INI
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class ActiveOrdersScreen extends StatefulWidget {
   const ActiveOrdersScreen({super.key});
@@ -42,7 +43,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
     }
     // --- AKHIR MODIFIKASI ---
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/orders/my-active-jobs');
+    final url = Uri.parse(ApiConfig.myActiveJobsEndpoint);
     final response = await http.get(
       url,
       headers: {
@@ -70,8 +71,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
     });
 
     final token = await _storage.read(key: 'accessToken');
-    final url =
-        Uri.parse('http://192.168.1.4:3000/api/orders/$orderId/update-status');
+    final url = Uri.parse(ApiConfig.orderUpdateStatusEndpoint(orderId));
 
     try {
       final response = await http.post(

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class UserChatListScreen extends StatefulWidget {
   const UserChatListScreen({super.key});
@@ -37,7 +38,7 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
       throw Exception('Token tidak valid');
     }
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/chats/my-list');
+    final url = Uri.parse(ApiConfig.chatListEndpoint);
     final response = await http.get(
       url,
       headers: {
@@ -105,7 +106,7 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
               itemBuilder: (context, index) {
                 final chatData = chats[index];
                 final orderId = chatData['id']?.toString() ?? 'no-id';
-                
+
                 final String otherUserName =
                     chatData['deliverer']?['nama'] ?? 'Deliverer';
                 final String delivererId =
@@ -157,16 +158,18 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
                     ],
                   ),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          orderId: orderId,
-                          delivererId: delivererId,
-                          otherUserName: otherUserName,
-                          currentUserId: _currentUserId,
-                        ),
-                      ),
-                    ).then((_) => _refreshChatList());
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreen(
+                              orderId: orderId,
+                              delivererId: delivererId,
+                              otherUserName: otherUserName,
+                              currentUserId: _currentUserId,
+                            ),
+                          ),
+                        )
+                        .then((_) => _refreshChatList());
                   },
                 );
               },

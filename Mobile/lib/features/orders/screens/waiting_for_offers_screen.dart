@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http; // <-- [MODIFIKASI]
 import 'dart:convert'; // <-- [MODIFIKASI]
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // <-- [MODIFIKASI]
 import 'package:titipin_app/features/auth/screens/auth_gate.dart'; // <-- [MODIFIKASI]
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class WaitingForOffersScreen extends StatefulWidget {
   final String orderId;
@@ -44,8 +45,8 @@ class _WaitingForOffersScreenState extends State<WaitingForOffersScreen> {
       throw Exception('Token tidak valid');
     }
 
-    final url = Uri.parse(
-        'http://192.168.1.4:3000/api/orders/${widget.orderId}/offers');
+    final url =
+        Uri.parse(ApiConfig.orderOffersEndpoint(int.parse(widget.orderId)));
     final response = await http.get(
       url,
       headers: {
@@ -85,7 +86,7 @@ class _WaitingForOffersScreenState extends State<WaitingForOffersScreen> {
     final String delivererName = offerData['deliverer']['nama'] ?? 'Deliverer';
 
     final token = await _storage.read(key: 'accessToken');
-    final url = Uri.parse('http://192.168.1.4:3000/api/offers/$offerId/accept');
+    final url = Uri.parse(ApiConfig.offerAcceptEndpoint(offerId));
 
     try {
       final response = await http.post(

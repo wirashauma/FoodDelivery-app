@@ -4,6 +4,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class Message {
   final int id;
@@ -68,8 +69,8 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     try {
       final token = await _storage.read(key: 'accessToken');
-      final url = Uri.parse(
-          'http://192.168.1.4:3000/api/chats/${widget.orderId}/messages');
+      final url =
+          Uri.parse(ApiConfig.chatMessagesEndpoint(int.parse(widget.orderId)));
 
       final response = await http.get(
         url,
@@ -101,7 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _connectSocket() {
-    socket = io.io('http://192.168.1.4:3000',
+    socket = io.io(ApiConfig.socketUrl,
         io.OptionBuilder().setTransports(['websocket']).build());
 
     socket!.onConnect((_) {

@@ -5,6 +5,7 @@ import 'package:titipin_app/features/auth/screens/auth_gate.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -26,7 +27,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/auth/login');
+    final url = Uri.parse(ApiConfig.loginEndpoint);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 

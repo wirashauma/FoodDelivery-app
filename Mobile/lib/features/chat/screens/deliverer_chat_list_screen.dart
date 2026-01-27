@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class DelivererChatListScreen extends StatefulWidget {
   const DelivererChatListScreen({super.key});
@@ -38,7 +39,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
       throw Exception('Token tidak valid');
     }
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/chats/my-list');
+    final url = Uri.parse(ApiConfig.chatListEndpoint);
     final response = await http.get(
       url,
       headers: {
@@ -107,12 +108,14 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
                 final chatData = chats[index];
                 final orderId = chatData['id']?.toString() ?? 'no-id';
 
-                final String otherUserName = chatData['user']?['nama'] ?? 'User';
-                
+                final String otherUserName =
+                    chatData['user']?['nama'] ?? 'User';
+
                 String lastMessage = "Belum ada pesan";
                 DateTime? lastMessageTime;
-                
-                if(chatData['messages'] != null && (chatData['messages'] as List).isNotEmpty) {
+
+                if (chatData['messages'] != null &&
+                    (chatData['messages'] as List).isNotEmpty) {
                   lastMessage = chatData['messages'][0]['text'] ?? '...';
                   lastMessageTime =
                       DateTime.parse(chatData['messages'][0]['created_at'])
@@ -154,16 +157,18 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
                     ],
                   ),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          orderId: orderId,
-                          delivererId: _currentUserId, 
-                          otherUserName: otherUserName,
-                          currentUserId: _currentUserId,
-                        ),
-                      ),
-                    ).then((_) => _refreshChatList());
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreen(
+                              orderId: orderId,
+                              delivererId: _currentUserId,
+                              otherUserName: otherUserName,
+                              currentUserId: _currentUserId,
+                            ),
+                          ),
+                        )
+                        .then((_) => _refreshChatList());
                   },
                 );
               },

@@ -3,6 +3,7 @@ import 'package:titipin_app/data/models/product_model.dart';
 import 'package:titipin_app/features/explore/screens/product_detail_screen.dart';
 import 'package:http/http.dart' as http; // <-- [MODIFIKASI]: TAMBAHKAN IMPORT
 import 'dart:convert'; // <-- [MODIFIKASI]: TAMBAHKAN IMPORT
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -16,8 +17,8 @@ class ExploreScreen extends StatelessWidget {
 
   // [MODIFIKASI]: Fungsi simulasi diganti dengan pemanggilan API
   Future<List<Product>> _fetchProductsFromApi() async {
-    // Gunakan 10.0.2.2 untuk emulator Android
-    final url = Uri.parse('http://192.168.1.4:3000/api/products');
+    // Menggunakan API Config terpusat
+    final url = Uri.parse(ApiConfig.productsEndpoint);
 
     try {
       final response = await http.get(url);

@@ -1,10 +1,11 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class DelivererService {
-  // [CONFIGURATION] Match your backend API URL
-  static const String _baseUrl = 'http://192.168.1.4:3000/api';
+  // [CONFIGURATION] Menggunakan API Config terpusat
+  static String get _baseUrl => ApiConfig.baseUrl;
   final _storage = const FlutterSecureStorage();
 
   /// Get deliverer dashboard statistics

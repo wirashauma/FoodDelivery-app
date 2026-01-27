@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:titipin_app/features/auth/screens/signin_screen.dart';
 import 'package:http/http.dart' as http;
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 // [MODIFIKASI]: Import dart:convert sudah ada di atas
 
 class SignUpScreen extends StatefulWidget {
@@ -27,8 +28,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _isLoading = true;
     });
 
-    // [MODIFIKASI]: Pastikan URL ini benar
-    final url = Uri.parse('http://192.168.1.4:3000/api/auth/register');
+    // [MODIFIKASI]: Menggunakan API Config terpusat
+    final url = Uri.parse(ApiConfig.registerEndpoint);
 
     try {
       final response = await http.post(

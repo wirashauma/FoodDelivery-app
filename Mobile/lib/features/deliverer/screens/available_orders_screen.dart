@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class AvailableOrdersScreen extends StatefulWidget {
   const AvailableOrdersScreen({super.key});
@@ -28,7 +29,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
       throw Exception('Token tidak ditemukan. Silakan login ulang.');
     }
 
-    final url = Uri.parse('http://192.168.1.4:3000/api/orders/available');
+    final url = Uri.parse(ApiConfig.availableOrdersEndpoint);
     final response = await http.get(
       url,
       headers: {
@@ -98,7 +99,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
     }
 
     final token = await _storage.read(key: 'accessToken');
-    final url = Uri.parse('http://192.168.1.4:3000/api/offers');
+    final url = Uri.parse(ApiConfig.offersEndpoint);
 
     try {
       final response = await http.post(

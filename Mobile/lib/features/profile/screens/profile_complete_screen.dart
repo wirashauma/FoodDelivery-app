@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:titipin_app/features/profile/screens/profile_success_screen.dart';
 import 'package:intl/intl.dart'; // <-- [MODIFIKASI]: Tambahkan import intl
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class ProfileCompleteScreen extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -96,7 +97,7 @@ class _ProfileCompleteScreenState extends State<ProfileCompleteScreen> {
         throw Exception('Token tidak ditemukan, silakan login ulang.');
       }
 
-      final url = Uri.parse('http://192.168.1.4:3000/api/profile/me');
+      final url = Uri.parse(ApiConfig.profileEndpoint);
 
       final response = await http.post(
         url,

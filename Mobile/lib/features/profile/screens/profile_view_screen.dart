@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:titipin_app/features/auth/screens/auth_gate.dart';
 import 'package:titipin_app/features/profile/screens/profile_complete_screen.dart';
 import 'package:intl/intl.dart'; // <-- [MODIFIKASI]: Tambahkan import intl
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class ProfileViewScreen extends StatefulWidget {
   const ProfileViewScreen({super.key});
@@ -32,7 +33,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         throw Exception('Token tidak ditemukan');
       }
 
-      final url = Uri.parse('http://192.168.1.4:3000/api/profile/me');
+      final url = Uri.parse(ApiConfig.profileEndpoint);
       final response = await http.get(
         url,
         headers: {

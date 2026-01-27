@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:titipin_app/features/cart/services/cart_service.dart';
 import 'package:titipin_app/features/orders/screens/waiting_for_offers_screen.dart';
 import 'package:titipin_app/features/auth/screens/auth_gate.dart';
+import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -75,7 +76,7 @@ class _CartScreenState extends State<CartScreen> {
         'destination': destination
       };
 
-      final String url = 'http://192.168.1.4:3000/api/orders';
+      final String url = ApiConfig.ordersEndpoint;
 
       final response = await http.post(
         Uri.parse(url),
