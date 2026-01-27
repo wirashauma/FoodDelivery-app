@@ -1,5 +1,3 @@
-import 'package:titipin_app/data/models/product_model.dart';
-
 class Order {
   final String id;
   final String userId;

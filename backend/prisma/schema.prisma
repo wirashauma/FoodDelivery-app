@@ -50,10 +50,11 @@ model users {
   alamat        String?   @db.Text
   foto_profil   String?   @db.Text
 
-  orders          orders[]  @relation("CustomerOrders")
-  deliveredOrders orders[]  @relation("DeliveredOrders")
+  orders          orders[]        @relation("CustomerOrders")
+  deliveredOrders orders[]        @relation("DeliveredOrders")
   offers          Offer[]
-  messages        Message[] // <-- TAMBAHKAN RELASI KE CHAT
+  messages        Message[]
+  refreshTokens   RefreshToken[]
 }
 
 model Product {
@@ -92,4 +93,19 @@ model Message {
   // Relasi ke User (siapa pengirimnya)
   sender_id  Int
   sender     users    @relation(fields: [sender_id], references: [user_id])
+}
+
+// --- REFRESH TOKEN MODEL ---
+model RefreshToken {
+  id           Int      @id @default(autoincrement())
+  token        String   @unique @db.VarChar(500)
+  user_id      Int
+  user         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  expires_at   DateTime
+  created_at   DateTime @default(now())
+  revoked      Boolean  @default(false)
+  device_info  String?  @db.VarChar(255)
+  
+  @@index([user_id])
+  @@index([token])
 }

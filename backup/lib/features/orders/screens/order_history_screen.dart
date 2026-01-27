@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:tugasakhir/features/chat/screens/chat_screen.dart';
 import 'package:tugasakhir/features/cart/screens/cart_screen.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart'; 
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -177,7 +177,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                         const SizedBox(height: 10),
                       ],
                     );
-                  }).toList(),
+                  }),
 
                   // === Kolom Komentar (Opsional) ===
                   const SizedBox(height: 12),
@@ -436,8 +436,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         items.map((e) => '${e['quantity']} ${e['name']}').join(', ');
     if (itemsSummary.isEmpty) itemsSummary = 'Tidak ada detail item';
 
-    double itemsTotal = items.fold(0.0,
-        (sum, item) => sum + ((item['price'] ?? 0) * (item['quantity'] ?? 0)));
+    double itemsTotal = items.fold(
+        0.0,
+        (total, item) =>
+            total + ((item['price'] ?? 0) * (item['quantity'] ?? 0)));
     double grandTotal = itemsTotal + ongkirFinal;
 
     final bool isThisReordering = _reorderingState[orderId] ?? false;
@@ -445,8 +447,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
 
     // --- PERUBAHAN DI SINI: Cek status rating ---
     final bool isRated = order['isRated'] ?? false;
-    final String delivererId = order['delivererTerpilihId'] ?? '';
-    final String delivererName = order['delivererName'] ?? 'Deliverer';
+    // Deliverer info untuk rating (digunakan di dialog rating)
+    final _ = order['delivererTerpilihId'] ?? '';
+    final __ = order['delivererName'] ?? 'Deliverer';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

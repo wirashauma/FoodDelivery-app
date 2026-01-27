@@ -25,13 +25,15 @@ class _RatingDialogState extends State<RatingDialog> {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: const Text('Kasih Rating', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text('Kasih Rating',
+          style: TextStyle(fontWeight: FontWeight.bold)),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // === DRIVER SECTION ===
-            Text('Driver: $delivererName', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Driver: $delivererName',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             RatingBar.builder(
               initialRating: delivererRating,
@@ -40,8 +42,10 @@ class _RatingDialogState extends State<RatingDialog> {
               itemCount: 5,
               itemSize: 28,
               unratedColor: Colors.grey.shade300,
-              itemBuilder: (context, _) => const Icon(Icons.star, color: Colors.amber),
-              onRatingUpdate: (rating) => setState(() => delivererRating = rating),
+              itemBuilder: (context, _) =>
+                  const Icon(Icons.star, color: Colors.amber),
+              onRatingUpdate: (rating) =>
+                  setState(() => delivererRating = rating),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -55,12 +59,13 @@ class _RatingDialogState extends State<RatingDialog> {
             const SizedBox(height: 16),
 
             // === PRODUCT SECTION ===
-            const Text('Rating untuk Produk:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Rating untuk Produk:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ...items.map((item) {
-
               final name = item['name'] ?? 'Produk';
-              final productId = item['id'] ?? name; // Fallback ke nama jika ID tidak ada
+              final productId =
+                  item['id'] ?? name; // Fallback ke nama jika ID tidak ada
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,8 +79,10 @@ class _RatingDialogState extends State<RatingDialog> {
                     itemCount: 5,
                     itemSize: 24,
                     unratedColor: Colors.grey.shade300,
-                    itemBuilder: (context, _) => const Icon(Icons.star, color: Colors.amber),
-                    onRatingUpdate: (rating) => setState(() => productRatings[productId] = rating),
+                    itemBuilder: (context, _) =>
+                        const Icon(Icons.star, color: Colors.amber),
+                    onRatingUpdate: (rating) =>
+                        setState(() => productRatings[productId] = rating),
                   ),
                   const SizedBox(height: 10),
                 ],
@@ -97,7 +104,10 @@ class _RatingDialogState extends State<RatingDialog> {
                   await _submitRatings(delivererId);
                 },
           child: isSubmitting
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Kirim'),
         ),
       ],
@@ -115,20 +125,21 @@ class _RatingDialogState extends State<RatingDialog> {
 
     // 2. Set loading state (Logika UI)
     setState(() => isSubmitting = true);
-    
-    // a. Siapkan data untuk dikirim (dalam format JSON)
-    final Map<String, dynamic> ratingData = {
-      'orderId': widget.orderId,
-      'delivererId': delivererId,
-      'delivererRating': delivererRating,
-      'delivererComment': delivererComment,
-      'productRatings': productRatings, 
-    };
+
+    // TODO: Send rating data to API when backend endpoint is ready
+    // Data format:
+    // {
+    //   'orderId': widget.orderId,
+    //   'delivererId': delivererId,
+    //   'delivererRating': delivererRating,
+    //   'delivererComment': delivererComment,
+    //   'productRatings': productRatings,
+    // }
 
     await Future.delayed(const Duration(seconds: 2));
 
     setState(() => isSubmitting = false);
-    
+
     // 4. Tutup dialog dan beri pesan sukses (Logika UI)
     if (!mounted) return; // Praktik terbaik setelah 'await'
     Navigator.pop(context);

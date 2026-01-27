@@ -12,12 +12,17 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const isAuthenticated = useMemo(() => {
-    const token = Cookies.get('adminToken');
-    return !!token;
+    // Check both old adminToken and new unified auth tokens
+    const adminToken = Cookies.get('adminToken');
+    const authToken = Cookies.get('authToken');
+    const userRole = Cookies.get('userRole');
+    
+    // Valid if has old admin token OR has new auth with ADMIN role
+    return !!adminToken || (!!authToken && userRole === 'ADMIN');
   }, []);
 
   if (!isAuthenticated) {
-    redirect('/login');
+    redirect('/auth');
   }
 
   return (

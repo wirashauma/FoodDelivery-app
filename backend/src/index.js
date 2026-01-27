@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const cors = require('cors'); // Import CORS
 const http = require('http'); // Import http
 const { Server } = require("socket.io"); // Import socket.io
 const { PrismaClient } = require('@prisma/client'); // Import Prisma
@@ -19,6 +20,8 @@ const io = new Server(server, { // Inisialisasi Socket.IO
   }
 });
 
+// Enable CORS for all origins
+app.use(cors());
 app.use(express.json());
 
 // [NEW] Import platform detection middleware
