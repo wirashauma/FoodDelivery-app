@@ -181,7 +181,7 @@ class _WaitingForOffersScreenState extends State<WaitingForOffersScreen> {
                       return Center(child: Text("Error: ${snapshot.error}"));
                     }
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(
+                      return const Center(
                           child:
                               Text("Belum ada tawaran. Tarik untuk refresh."));
                     }
