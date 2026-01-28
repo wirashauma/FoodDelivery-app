@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usersAPI } from '@/lib/api';
+import { useEffect, useState, useCallback } from 'react';
+import { usersAPI, exportAPI } from '@/lib/api';
 import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import Modal from '@/components/Modal';
 import { User } from '@/types';
 import { format } from 'date-fns';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -19,24 +20,9 @@ export default function UsersPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      setLoading(true);
-      try {
-        const response = await usersAPI.getAll(page, 10, searchQuery);
-        setUsers(response.data);
-        setTotalPages(response.pagination.totalPages);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUsers();
-  }, [page, searchQuery]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await usersAPI.getAll(page, 10, searchQuery);
@@ -44,10 +30,15 @@ export default function UsersPage() {
       setTotalPages(response.pagination.totalPages);
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast.error('Gagal memuat data pengguna');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchQuery]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -59,13 +50,37 @@ export default function UsersPage() {
     setDeleteLoading(true);
     try {
       await usersAPI.delete(selectedUser.user_id);
+      toast.success(`Pengguna ${selectedUser.username} berhasil dihapus`);
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
       fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
+      toast.error('Gagal menghapus pengguna');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      toast.loading('Mengekspor data...', { id: 'export' });
+      const blob = await exportAPI.users();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Data berhasil diekspor', { id: 'export' });
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Gagal mengekspor data', { id: 'export' });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -115,10 +130,20 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Users Management</h1>
-        <p className="text-gray-500">Manage all registered users</p>
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Users Management</h1>
+          <p className="text-sm text-gray-500">Manage all registered users</p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+        >
+          <Download size={18} />
+          <span>{exporting ? 'Mengekspor...' : 'Export CSV'}</span>
+        </button>
       </div>
 
       <DataTable
@@ -145,34 +170,34 @@ export default function UsersPage() {
         title="User Details"
       >
         {selectedUser && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary-600">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary-100 rounded-full flex items-center justify-center shrink-0">
+                <span className="text-xl sm:text-2xl font-bold text-primary-600">
                   {selectedUser.username.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold">{selectedUser.username}</h3>
-                <p className="text-gray-500">{selectedUser.email}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-semibold truncate">{selectedUser.username}</h3>
+                <p className="text-gray-500 text-sm sm:text-base truncate">{selectedUser.email}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
               <div>
-                <p className="text-sm text-gray-500">User ID</p>
-                <p className="font-medium">{selectedUser.user_id}</p>
+                <p className="text-xs sm:text-sm text-gray-500">User ID</p>
+                <p className="font-medium text-sm sm:text-base">{selectedUser.user_id}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Role</p>
+                <p className="text-xs sm:text-sm text-gray-500">Role</p>
                 <StatusBadge status={selectedUser.role} type="user" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium">{selectedUser.phone_number || '-'}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Phone</p>
+                <p className="font-medium text-sm sm:text-base">{selectedUser.phone_number || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Joined</p>
-                <p className="font-medium">
+                <p className="text-xs sm:text-sm text-gray-500">Joined</p>
+                <p className="font-medium text-sm sm:text-base">
                   {format(new Date(selectedUser.created_at), 'MMM dd, yyyy HH:mm')}
                 </p>
               </div>
@@ -191,24 +216,24 @@ export default function UsersPage() {
         title="Delete User"
         size="sm"
       >
-        <div className="space-y-4">
-          <p className="text-gray-600">
+        <div className="space-y-3 sm:space-y-4">
+          <p className="text-gray-600 text-sm sm:text-base">
             Are you sure you want to delete user <strong>{selectedUser?.username}</strong>? This action cannot be undone.
           </p>
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-2 sm:gap-3 justify-end">
             <button
               onClick={() => {
                 setIsDeleteModalOpen(false);
                 setSelectedUser(null);
               }}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-3 sm:px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
             >
               Cancel
             </button>
             <button
               onClick={handleDelete}
               disabled={deleteLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
             >
               {deleteLoading ? 'Deleting...' : 'Delete'}
             </button>

@@ -94,17 +94,17 @@ export default function EarningsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Earnings & Reports</h1>
-          <p className="text-gray-500">Financial overview and revenue reports</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Earnings & Reports</h1>
+          <p className="text-sm text-gray-500">Financial overview and revenue reports</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="week">Last 7 Days</option>
             <option value="month">Last 30 Days</option>
@@ -115,7 +115,7 @@ export default function EarningsPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <StatsCard
           title="Total Revenue"
           value={formatCurrency(earnings?.totalRevenue || 0)}
@@ -143,27 +143,30 @@ export default function EarningsPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Revenue Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Revenue</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Daily Revenue</h3>
+          <ResponsiveContainer width="100%" height={250} className="sm:h-75">
             <BarChart data={earnings?.dailyEarnings || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => format(new Date(value), 'dd MMM')}
                 stroke="#9ca3af"
+                tick={{ fontSize: 11 }}
               />
               <YAxis
                 stroke="#9ca3af"
                 tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                tick={{ fontSize: 11 }}
               />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
                   borderRadius: '8px',
+                  fontSize: '12px',
                 }}
                 formatter={(value) => [formatCurrency(value as number), 'Revenue']}
                 labelFormatter={(label) => format(new Date(label), 'MMM dd, yyyy')}
@@ -174,22 +177,24 @@ export default function EarningsPage() {
         </div>
 
         {/* Orders Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Orders</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Daily Orders</h3>
+          <ResponsiveContainer width="100%" height={250} className="sm:h-75">
             <LineChart data={earnings?.dailyEarnings || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => format(new Date(value), 'dd MMM')}
                 stroke="#9ca3af"
+                tick={{ fontSize: 11 }}
               />
-              <YAxis stroke="#9ca3af" />
+              <YAxis stroke="#9ca3af" tick={{ fontSize: 11 }} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
                   borderRadius: '8px',
+                  fontSize: '12px',
                 }}
                 labelFormatter={(label) => format(new Date(label), 'MMM dd, yyyy')}
               />
@@ -206,32 +211,32 @@ export default function EarningsPage() {
       </div>
 
       {/* Export Report */}
-      <div className="bg-white rounded-xl p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Export Report</h3>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Export Report</h3>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 sm:items-end">
+          <div className="flex-1 sm:flex-none">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <div className="flex-1 sm:flex-none">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">End Date</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <button
             onClick={handleExportReport}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
           >
-            <Download size={18} />
+            <Download size={16} />
             Export CSV
           </button>
         </div>
@@ -239,33 +244,33 @@ export default function EarningsPage() {
 
       {/* Summary Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-800">Daily Breakdown</h3>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800">Daily Breakdown</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-100">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
+                <th className="px-4 sm:px-6 py-2.5 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-4 sm:px-6 py-2.5 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                <th className="px-4 sm:px-6 py-2.5 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {earnings?.dailyEarnings?.slice(0, 10).map((day, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-700">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">
                     {format(new Date(day.date), 'MMM dd, yyyy')}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{day.orders}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{day.orders}</td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
                     {formatCurrency(day.revenue)}
                   </td>
                 </tr>
               ))}
               {(!earnings?.dailyEarnings || earnings.dailyEarnings.length === 0) && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-4 sm:px-6 py-6 sm:py-8 text-center text-sm text-gray-500">
                     No data available
                   </td>
                 </tr>

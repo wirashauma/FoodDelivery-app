@@ -33,6 +33,7 @@ app.use(detectPlatform);
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const productRoutes = require('./routes/product');
+const restaurantRoutes = require('./routes/restaurant');
 const orderRoutes = require('./routes/orders');
 const offerRoutes = require('./routes/offer');
 const chatRoutes = require('./routes/chat'); // <-- TAMBAHKAN RUTE CHAT
@@ -41,6 +42,7 @@ const adminRoutes = require('./routes/admin'); // <-- ADMIN ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/chats', chatRoutes); // <-- GUNAKAN RUTE CHAT

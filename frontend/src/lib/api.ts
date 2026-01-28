@@ -218,12 +218,64 @@ export const authAPI = {
 
 // Products API (for User)
 export const productsAPI = {
-  getAll: async () => {
-    const response = await api.get('/products');
+  getAll: async (kategori = '', restaurantId = '') => {
+    const response = await api.get('/products', {
+      params: { kategori, restaurantId },
+    });
     return response.data;
   },
   getById: async (id: number) => {
     const response = await api.get(`/products/${id}`);
+    return response.data;
+  },
+  create: async (data: {
+    nama: string;
+    deskripsi: string;
+    harga: number;
+    imageUrl: string;
+    kategori: string;
+    restaurantId?: number;
+    isAvailable?: boolean;
+  }) => {
+    const response = await api.post('/products', data);
+    return response.data;
+  },
+  update: async (id: number, data: Record<string, unknown>) => {
+    const response = await api.put(`/products/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  },
+};
+
+// Restaurants API
+export const restaurantsAPI = {
+  getAll: async () => {
+    const response = await api.get('/restaurants');
+    return response.data;
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/restaurants/${id}`);
+    return response.data;
+  },
+  create: async (data: {
+    nama: string;
+    deskripsi?: string;
+    alamat: string;
+    imageUrl?: string;
+    isActive?: boolean;
+  }) => {
+    const response = await api.post('/restaurants', data);
+    return response.data;
+  },
+  update: async (id: number, data: Record<string, unknown>) => {
+    const response = await api.put(`/restaurants/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/restaurants/${id}`);
     return response.data;
   },
 };
@@ -325,6 +377,22 @@ export const dashboardAPI = {
     const response = await api.get('/admin/dashboard/stats');
     return response.data;
   },
+  getTopDeliverers: async (limit = 5) => {
+    const response = await api.get('/admin/dashboard/top-deliverers', {
+      params: { limit },
+    });
+    return response.data;
+  },
+};
+
+// Notifications API
+export const notificationsAPI = {
+  getAll: async (limit = 10) => {
+    const response = await api.get('/admin/notifications', {
+      params: { limit },
+    });
+    return response.data;
+  },
 };
 
 // Users API
@@ -351,10 +419,14 @@ export const usersAPI = {
 
 // Deliverers API
 export const deliverersAPI = {
-  getAll: async (page = 1, limit = 10, status = '') => {
+  getAll: async (page = 1, limit = 10, status = '', search = '', sortBy = 'created_at') => {
     const response = await api.get('/admin/deliverers', {
-      params: { page, limit, status },
+      params: { page, limit, status, search, sortBy },
     });
+    return response.data;
+  },
+  getOverview: async () => {
+    const response = await api.get('/admin/deliverers/overview');
     return response.data;
   },
   getPending: async () => {
@@ -377,6 +449,14 @@ export const deliverersAPI = {
     const response = await api.get(`/admin/deliverers/${id}`);
     return response.data;
   },
+  getPerformance: async (id: number) => {
+    const response = await api.get(`/admin/deliverers/${id}/performance`);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/admin/deliverers/${id}`);
+    return response.data;
+  },
 };
 
 // Earnings API
@@ -397,6 +477,24 @@ export const earningsAPI = {
     const response = await api.get('/admin/earnings/report', {
       params: { startDate, endDate },
     });
+    return response.data;
+  },
+};
+
+// Export API
+export const exportAPI = {
+  users: async () => {
+    const response = await api.get('/admin/export/users');
+    return response.data;
+  },
+  orders: async (startDate = '', endDate = '') => {
+    const response = await api.get('/admin/export/orders', {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+  deliverers: async () => {
+    const response = await api.get('/admin/export/deliverers');
     return response.data;
   },
 };

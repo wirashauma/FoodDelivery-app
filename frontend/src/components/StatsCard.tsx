@@ -27,23 +27,23 @@ export default function StatsCard({
   color = 'primary',
 }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm card-hover">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-800">{value}</p>
+    <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-6 shadow-sm card-hover">
+      <div className="flex items-start sm:items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1 truncate">{title}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-800 truncate">{value}</p>
           {trend && (
             <p
-              className={`text-sm mt-1 ${
+              className={`text-xs sm:text-sm mt-0.5 sm:mt-1 ${
                 trend.isPositive ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}% from last month
+              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
             </p>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon size={24} />
+        <div className={`p-2 sm:p-3 rounded-lg shrink-0 ${colorClasses[color]}`}>
+          <Icon size={18} className="sm:w-6 sm:h-6" />
         </div>
       </div>
     </div>

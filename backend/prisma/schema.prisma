@@ -57,15 +57,31 @@ model users {
   refreshTokens   RefreshToken[]
 }
 
+// Restaurant/Tempat Makan
+model Restaurant {
+  id          Int       @id @default(autoincrement())
+  nama        String    @db.VarChar(255)
+  deskripsi   String?   @db.Text
+  alamat      String    @db.Text
+  imageUrl    String?   @db.Text
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
 model Product {
-  id          Int      @id @default(autoincrement())
-  nama        String   @db.VarChar(255)
-  deskripsi   String   @db.Text
-  harga       Int
-  imageUrl    String   @db.Text
-  kategori    String   @db.VarChar(100)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int         @id @default(autoincrement())
+  nama          String      @db.VarChar(255)
+  deskripsi     String      @db.Text
+  harga         Int
+  imageUrl      String      @db.Text
+  kategori      String      @db.VarChar(100)
+  isAvailable   Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  restaurantId  Int?
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
 }
 
 model Offer {

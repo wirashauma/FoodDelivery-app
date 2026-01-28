@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ordersAPI } from '@/lib/api';
+import { useEffect, useState, useCallback } from 'react';
+import { ordersAPI, exportAPI } from '@/lib/api';
 import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import Modal from '@/components/Modal';
 import { Order } from '@/types';
 import { format } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Eye, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const orderStatuses = [
   'PENDING',
@@ -33,24 +34,9 @@ export default function OrdersPage() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      setLoading(true);
-      try {
-        const response = await ordersAPI.getAll(page, 10, statusFilter, startDate, endDate);
-        setOrders(response.data);
-        setTotalPages(response.pagination.totalPages);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadOrders();
-  }, [page, statusFilter, startDate, endDate]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const response = await ordersAPI.getAll(page, 10, statusFilter, startDate, endDate);
@@ -58,24 +44,53 @@ export default function OrdersPage() {
       setTotalPages(response.pagination.totalPages);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      toast.error('Gagal memuat data pesanan');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, statusFilter, startDate, endDate]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleUpdateStatus = async () => {
     if (!selectedOrder || !newStatus) return;
     setActionLoading(true);
     try {
       await ordersAPI.updateStatus(selectedOrder.order_id, newStatus);
+      toast.success(`Status pesanan #${selectedOrder.order_id} berhasil diperbarui`);
       setIsStatusModalOpen(false);
       setSelectedOrder(null);
       setNewStatus('');
       fetchOrders();
     } catch (error) {
       console.error('Error updating order status:', error);
+      toast.error('Gagal memperbarui status pesanan');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      toast.loading('Mengekspor data...', { id: 'export' });
+      const blob = await exportAPI.orders();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Data berhasil diekspor', { id: 'export' });
+    } catch (error) {
+      console.error('Error exporting orders:', error);
+      toast.error('Gagal mengekspor data', { id: 'export' });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -152,24 +167,34 @@ export default function OrdersPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Orders Management</h1>
-        <p className="text-gray-500">View and manage all orders</p>
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Orders Management</h1>
+          <p className="text-sm text-gray-500">View and manage all orders</p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+        >
+          <Download size={18} />
+          <span>{exporting ? 'Mengekspor...' : 'Export CSV'}</span>
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+      <div className="bg-white rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             >
               <option value="">All Status</option>
               {orderStatuses.map((status) => (
@@ -180,7 +205,7 @@ export default function OrdersPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
               value={startDate}
@@ -188,11 +213,11 @@ export default function OrdersPage() {
                 setStartDate(e.target.value);
                 setPage(1);
               }}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">End Date</label>
             <input
               type="date"
               value={endDate}
@@ -200,20 +225,22 @@ export default function OrdersPage() {
                 setEndDate(e.target.value);
                 setPage(1);
               }}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
             />
           </div>
-          <button
-            onClick={() => {
-              setStatusFilter('');
-              setStartDate('');
-              setEndDate('');
-              setPage(1);
-            }}
-            className="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Clear Filters
-          </button>
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setStatusFilter('');
+                setStartDate('');
+                setEndDate('');
+                setPage(1);
+              }}
+              className="w-full px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
 
@@ -240,37 +267,37 @@ export default function OrdersPage() {
         size="lg"
       >
         {selectedOrder && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Order Status */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <StatusBadge status={selectedOrder.status} type="order" />
-              <span className="text-sm text-gray-500">
+              <span className="text-xs sm:text-sm text-gray-500">
                 {format(new Date(selectedOrder.created_at), 'MMM dd, yyyy HH:mm')}
               </span>
             </div>
 
             {/* Customer & Store Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Customer</p>
-                <p className="font-medium">{selectedOrder.user?.username || 'Guest'}</p>
-                <p className="text-sm text-gray-500">{selectedOrder.user?.email}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1">Customer</p>
+                <p className="font-medium text-sm sm:text-base truncate">{selectedOrder.user?.username || 'Guest'}</p>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">{selectedOrder.user?.email}</p>
               </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Store</p>
-                <p className="font-medium">{selectedOrder.store?.name || 'N/A'}</p>
-                <p className="text-sm text-gray-500">{selectedOrder.store?.address}</p>
+              <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1">Store</p>
+                <p className="font-medium text-sm sm:text-base truncate">{selectedOrder.store?.name || 'N/A'}</p>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">{selectedOrder.store?.address}</p>
               </div>
             </div>
 
             {/* Delivery Info */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Delivery Address</p>
-              <p className="font-medium">{selectedOrder.delivery_address}</p>
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1">Delivery Address</p>
+              <p className="font-medium text-sm sm:text-base">{selectedOrder.delivery_address}</p>
               {selectedOrder.deliverer && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
-                  <p className="text-sm text-gray-500">Deliverer</p>
-                  <p className="font-medium">{selectedOrder.deliverer.user?.username}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Deliverer</p>
+                  <p className="font-medium text-sm sm:text-base">{selectedOrder.deliverer.user?.username}</p>
                 </div>
               )}
             </div>
@@ -278,15 +305,15 @@ export default function OrdersPage() {
             {/* Order Items */}
             {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
               <div>
-                <p className="font-medium mb-2">Order Items</p>
+                <p className="font-medium mb-2 text-sm sm:text-base">Order Items</p>
                 <div className="space-y-2">
                   {selectedOrder.order_items.map((item) => (
-                    <div key={item.order_item_id} className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{item.menu_item?.name || 'Item'}</p>
-                        <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                    <div key={item.order_item_id} className="flex justify-between gap-2 p-2.5 sm:p-3 bg-gray-50 rounded-lg">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base truncate">{item.menu_item?.name || 'Item'}</p>
+                        <p className="text-xs sm:text-sm text-gray-500">Qty: {item.quantity}</p>
                       </div>
-                      <p className="font-medium">{formatCurrency(item.subtotal)}</p>
+                      <p className="font-medium text-sm sm:text-base shrink-0">{formatCurrency(item.subtotal)}</p>
                     </div>
                   ))}
                 </div>
@@ -294,16 +321,16 @@ export default function OrdersPage() {
             )}
 
             {/* Totals */}
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between">
+            <div className="border-t pt-3 sm:pt-4 space-y-1.5 sm:space-y-2">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-500">Subtotal</span>
                 <span>{formatCurrency(selectedOrder.total_amount - selectedOrder.delivery_fee)}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-sm sm:text-base">
                 <span className="text-gray-500">Delivery Fee</span>
                 <span>{formatCurrency(selectedOrder.delivery_fee)}</span>
               </div>
-              <div className="flex justify-between font-bold text-lg">
+              <div className="flex justify-between font-bold text-base sm:text-lg">
                 <span>Total</span>
                 <span className="text-primary-600">{formatCurrency(selectedOrder.total_amount)}</span>
               </div>
@@ -311,9 +338,9 @@ export default function OrdersPage() {
 
             {/* Notes */}
             {selectedOrder.notes && (
-              <div className="p-4 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Notes</p>
-                <p>{selectedOrder.notes}</p>
+              <div className="p-3 sm:p-4 bg-yellow-50 rounded-lg">
+                <p className="text-xs sm:text-sm text-gray-500 mb-0.5 sm:mb-1">Notes</p>
+                <p className="text-sm sm:text-base">{selectedOrder.notes}</p>
               </div>
             )}
           </div>
@@ -331,13 +358,13 @@ export default function OrdersPage() {
         title="Update Order Status"
         size="sm"
       >
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">New Status</label>
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-3 sm:px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base"
             >
               {orderStatuses.map((status) => (
                 <option key={status} value={status}>
@@ -346,21 +373,21 @@ export default function OrdersPage() {
               ))}
             </select>
           </div>
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-2 sm:gap-3 justify-end">
             <button
               onClick={() => {
                 setIsStatusModalOpen(false);
                 setSelectedOrder(null);
                 setNewStatus('');
               }}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-3 sm:px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
             >
               Cancel
             </button>
             <button
               onClick={handleUpdateStatus}
               disabled={actionLoading}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm sm:text-base"
             >
               {actionLoading ? 'Updating...' : 'Update Status'}
             </button>

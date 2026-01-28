@@ -106,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> {
         io.OptionBuilder().setTransports(['websocket']).build());
 
     socket!.onConnect((_) {
-      print('Socket terhubung: ${socket!.id}');
+      debugPrint('Socket terhubung: ${socket!.id}');
       socket!.emit('join_room', widget.orderId);
     });
 
@@ -120,8 +120,8 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
 
-    socket!.onDisconnect((_) => print('Socket terputus'));
-    socket!.onError((data) => print('Socket Error: $data'));
+    socket!.onDisconnect((_) => debugPrint('Socket terputus'));
+    socket!.onError((data) => debugPrint('Socket Error: $data'));
   }
 
   void _sendMessage() {
@@ -265,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 5,
                   offset: const Offset(0, 2),
                 )
