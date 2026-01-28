@@ -46,7 +46,7 @@ class _AuthGateState extends State<AuthGate> {
       return role; // Kembalikan 'USER' atau 'DELIVERER'
     } catch (e) {
       // Jika ada error (misal: token korup), anggap logout
-      print("Error baca/decode token: $e");
+      debugPrint("Error baca/decode token: $e");
       await _storage.deleteAll();
       return null;
     }

@@ -87,7 +87,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   const SizedBox(height: 10),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

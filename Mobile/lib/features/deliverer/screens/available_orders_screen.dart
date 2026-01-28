@@ -98,6 +98,10 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
       return;
     }
 
+    // Capture navigator and messenger before async gap
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     final token = await _storage.read(key: 'accessToken');
     final url = Uri.parse(ApiConfig.offersEndpoint);
 
@@ -115,23 +119,23 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        navigator.pop();
         if (response.statusCode == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             const SnackBar(content: Text('Penawaran Anda berhasil dikirim!')),
           );
           _refreshOrders();
         } else {
           final error = json.decode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(content: Text('Gagal menawar: ${error['error']}')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        messenger.showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }

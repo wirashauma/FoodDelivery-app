@@ -17,7 +17,7 @@ class WelcomeScreen extends StatelessWidget {
             left: -80,
             child: _CircleElement(
               size: 220,
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha: 0.1),
             ),
           ),
           // Dekorasi lingkaran besar kanan bawah
@@ -26,7 +26,7 @@ class WelcomeScreen extends StatelessWidget {
             right: -100,
             child: _CircleElement(
               size: 280,
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha: 0.1),
             ),
           ),
           // Dekorasi lingkaran kecil kanan atas
@@ -35,14 +35,15 @@ class WelcomeScreen extends StatelessWidget {
             right: 40,
             child: _CircleElement(
               size: 60,
-              color: Colors.red.withOpacity(0.15),
+              color: Colors.red.withValues(alpha: 0.15),
             ),
           ),
           // Dekorasi lingkaran kecil kiri bawah
           Positioned(
             bottom: 150,
             left: 30,
-            child: _CircleElement(size: 40, color: Colors.red.withOpacity(0.2)),
+            child: _CircleElement(
+                size: 40, color: Colors.red.withValues(alpha: 0.2)),
           ),
 
           // Konten utama

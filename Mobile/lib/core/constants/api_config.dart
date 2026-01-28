@@ -1,7 +1,7 @@
-/// API Configuration for Titipin Mobile App
-///
-/// This file centralizes all API-related configurations.
-/// Change the baseUrl here to update all API calls throughout the app.
+// API Configuration for Titipin Mobile App
+//
+// This file centralizes all API-related configurations.
+// Change the baseUrl here to update all API calls throughout the app.
 
 class ApiConfig {
   // ===========================================
@@ -19,7 +19,7 @@ class ApiConfig {
   /// - For Android Emulator: use 10.0.2.2 (localhost alias)
   /// - For iOS Simulator: use localhost or 127.0.0.1
   /// - For Physical Device: use your computer's local IP
-  static const String _devBaseUrl = 'http://192.168.1.4:3000/api';
+  static const String _devBaseUrl = 'http://192.168.1.18:3000/api';
 
   /// Production API URL (your deployed backend)
   static const String _prodBaseUrl = 'https://api.titipin.com/api';

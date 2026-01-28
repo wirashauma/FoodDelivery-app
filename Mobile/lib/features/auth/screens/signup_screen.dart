@@ -156,7 +156,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 // === Dropdown Role (User / Deliverer) ===
                 DropdownButtonFormField<String>(
-                  value: _selectedRole,
+                  initialValue: _selectedRole,
                   decoration: InputDecoration(
                     labelText: 'Daftar sebagai',
                     border: OutlineInputBorder(
