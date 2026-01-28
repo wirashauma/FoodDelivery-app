@@ -195,9 +195,9 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
         ),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Stack(
@@ -212,7 +212,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -397,9 +397,9 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         children: [
