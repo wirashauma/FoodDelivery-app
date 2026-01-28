@@ -5,7 +5,7 @@ class ProfileService {
   static final ProfileService _instance = ProfileService._internal();
   factory ProfileService() => _instance;
 
-  Map<String, dynamic> _simulatedProfileData = {
+  final Map<String, dynamic> _simulatedProfileData = {
     'username': 'user_sim',
     'firstName': 'Sim',
     'lastName': 'Ulasi',
@@ -14,8 +14,7 @@ class ProfileService {
     'role': 'user',
   };
 
-  final _profileController =
-      StreamController<Map<String, dynamic>>.broadcast();
+  final _profileController = StreamController<Map<String, dynamic>>.broadcast();
 
   ProfileService._internal() {
     _notify();
