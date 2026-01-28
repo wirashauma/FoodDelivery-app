@@ -38,7 +38,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ElevatedButton(
             onPressed: () {
               _addToCart(note: _noteController.text);
-              Navigator.of(ctx).pop(); 
+              Navigator.of(ctx).pop();
             },
             child: const Text('Simpan & Tambah'),
           ),
@@ -57,7 +57,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       _cartService.addToCart(
         product: widget.product,
         quantity: quantity,
-        note: note, 
+        note: note,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +65,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               content:
                   Text('${widget.product.name} ditambahkan ke keranjang!')),
         );
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -101,7 +101,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.8),
+            backgroundColor: Colors.white.withValues(alpha: 0.8),
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black),
               onPressed: () => Navigator.of(context).pop(),
@@ -124,8 +124,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       return Container(
                         height: MediaQuery.of(context).size.height * 0.5,
                         width: double.infinity,
-                        color:
-                            Colors.grey[300], 
+                        color: Colors.grey[300],
                         child: Center(
                             child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
@@ -185,7 +184,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         const SizedBox(width: 10),
                         CircleAvatar(
-                          backgroundColor: Colors.red.withOpacity(0.1),
+                          backgroundColor: Colors.red.withValues(alpha: 0.1),
                           child: IconButton(
                             icon: const Icon(Icons.favorite_border,
                                 color: Colors.red),
