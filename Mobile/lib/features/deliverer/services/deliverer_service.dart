@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
 
@@ -32,7 +33,7 @@ class DelivererService {
             'Gagal memuat statistik dashboard: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error getting dashboard stats: $e');
+      debugPrint('Error getting dashboard stats: $e');
       rethrow;
     }
   }
@@ -59,7 +60,7 @@ class DelivererService {
         throw Exception('Gagal memuat pesanan aktif');
       }
     } catch (e) {
-      print('Error getting active orders: $e');
+      debugPrint('Error getting active orders: $e');
       rethrow;
     }
   }
@@ -91,7 +92,7 @@ class DelivererService {
         throw Exception('Gagal memuat pesanan selesai');
       }
     } catch (e) {
-      print('Error getting completed orders: $e');
+      debugPrint('Error getting completed orders: $e');
       rethrow;
     }
   }
@@ -118,7 +119,7 @@ class DelivererService {
         throw Exception('Gagal memuat pesanan tersedia');
       }
     } catch (e) {
-      print('Error getting available orders: $e');
+      debugPrint('Error getting available orders: $e');
       rethrow;
     }
   }
@@ -145,7 +146,7 @@ class DelivererService {
         throw Exception(errorData['error'] ?? 'Gagal menerima pesanan');
       }
     } catch (e) {
-      print('Error accepting order: $e');
+      debugPrint('Error accepting order: $e');
       rethrow;
     }
   }
@@ -176,7 +177,7 @@ class DelivererService {
         throw Exception(errorData['error'] ?? 'Gagal menolak pesanan');
       }
     } catch (e) {
-      print('Error rejecting order: $e');
+      debugPrint('Error rejecting order: $e');
       rethrow;
     }
   }
@@ -206,7 +207,7 @@ class DelivererService {
         throw Exception('Gagal memperbarui status pesanan');
       }
     } catch (e) {
-      print('Error updating order status: $e');
+      debugPrint('Error updating order status: $e');
       rethrow;
     }
   }
