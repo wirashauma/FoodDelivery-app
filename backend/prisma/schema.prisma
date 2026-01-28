@@ -1,127 +1,1309 @@
+// ============================================
+// PRISMA SCHEMA - PROFESSIONAL FOOD DELIVERY APP
+// ============================================
+// Features:
+// - Admin RBAC (Super Admin, Operations, Finance, CS)
+// - Merchant Management with Document Verification
+// - Advanced Order Management System (OMS)
+// - Financial & Payout System
+// - Promo Engine with Complex Voucher Logic
+// - Driver/Deliverer Management with Wallet
+// - Consumer Features (Cart, Addresses, Tracking)
+// ============================================
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// ============================================
+// ENUMS - COMPREHENSIVE DEFINITIONS
+// ============================================
+
+// User & Admin Roles
 enum Role {
-  USER
-  DELIVERER
-  ADMIN
+  CUSTOMER           // End user/consumer
+  DELIVERER          // Driver/Courier
+  MERCHANT           // Restaurant owner
+  ADMIN              // General admin
+  SUPER_ADMIN        // Full system access
+  OPERATIONS_STAFF   // Order management, driver management
+  FINANCE_STAFF      // Payouts, commissions, financial reports
+  CUSTOMER_SERVICE   // Complaints, support tickets
 }
 
+// Order Status - Extended
 enum OrderStatus {
-  WAITING_FOR_OFFERS
-  OFFER_ACCEPTED
-  ON_DELIVERY
+  PENDING             // Order created, awaiting payment
+  PAYMENT_PENDING     // Awaiting payment confirmation
+  PAYMENT_FAILED      // Payment failed
+  CONFIRMED           // Payment confirmed, sent to merchant
+  PREPARING           // Merchant preparing order
+  READY_FOR_PICKUP    // Ready for driver pickup
+  DRIVER_ASSIGNED     // Driver assigned
+  DRIVER_AT_MERCHANT  // Driver arrived at restaurant
+  PICKED_UP           // Driver picked up the order
+  ON_DELIVERY         // Driver on the way to customer
+  DRIVER_AT_LOCATION  // Driver arrived at customer location
+  DELIVERED           // Successfully delivered
+  COMPLETED           // Order completed with rating
+  CANCELLED           // Order cancelled
+  REFUNDED            // Order refunded
+}
+
+// Payment Status
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+// Payment Method
+enum PaymentMethod {
+  CASH                // Cash on Delivery (COD)
+  E_WALLET            // GoPay, OVO, Dana, etc.
+  BANK_TRANSFER       // Virtual Account
+  CREDIT_CARD         // Credit/Debit Card
+  QRIS                // QR Indonesian Standard
+  INTERNAL_WALLET     // App's internal wallet
+}
+
+// Merchant Verification Status
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// Document Type
+enum DocumentType {
+  KTP                 // National ID
+  NPWP                // Tax ID
+  SIUP                // Business License
+  NIB                 // Business ID Number
+  SIM                 // Driver's License
+  STNK                // Vehicle Registration
+  HALAL_CERTIFICATE
+  HEALTH_CERTIFICATE
+}
+
+// Driver Status
+enum DriverStatus {
+  OFFLINE
+  ONLINE
+  BUSY                // Currently on a delivery
+  ON_BREAK
+}
+
+// Payout Status
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PROCESSING
   COMPLETED
-  CANCELLED
+  REJECTED
+  FAILED
 }
 
-model orders {
-  id           Int         @id @default(autoincrement())
-  item_id      String      @db.VarChar(255)
-  quantity     Int
-  destination  String      @db.VarChar(255)
-  status       OrderStatus @default(WAITING_FOR_OFFERS)
-  created_at   DateTime?   @default(now()) @db.Timestamp(6)
-  user_id      Int
-  user         users       @relation("CustomerOrders", fields: [user_id], references: [user_id])
-  deliverer_id Int?
-  deliverer    users?      @relation("DeliveredOrders", fields: [deliverer_id], references: [user_id])
-  final_fee    Int?
-  offers       Offer[]
-  messages     Message[] // <-- TAMBAHKAN RELASI KE CHAT
+// Promo/Voucher Type
+enum PromoType {
+  PERCENTAGE          // % off
+  FIXED_AMOUNT        // Fixed amount off
+  FREE_DELIVERY       // Free delivery fee
+  CASHBACK            // Cashback to wallet
+  BUY_X_GET_Y         // Buy X get Y free
 }
 
-model users {
-  user_id       Int       @id @default(autoincrement())
-  email         String    @unique @db.VarChar(255)
-  password_hash String    @db.VarChar(255)
-  created_at    DateTime? @default(now()) @db.Timestamp(6)
-  role          Role      @default(USER)
-  nama          String?   @db.VarChar(100)
-  tgl_lahir     DateTime? @db.Date
-  no_hp         String?   @db.VarChar(20)
-  alamat        String?   @db.Text
-  foto_profil   String?   @db.Text
-
-  orders          orders[]        @relation("CustomerOrders")
-  deliveredOrders orders[]        @relation("DeliveredOrders")
-  offers          Offer[]
-  messages        Message[]
-  refreshTokens   RefreshToken[]
+// Voucher Applicability
+enum VoucherApplicability {
+  ALL_USERS
+  NEW_USERS
+  SPECIFIC_USERS
+  MERCHANT_SPECIFIC
+  CATEGORY_SPECIFIC
 }
 
-// Restaurant/Tempat Makan
-model Restaurant {
+// Audit Action Type
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  REFUND
+  PAYOUT
+  ASSIGN_DRIVER
+  CANCEL_ORDER
+  OVERRIDE
+}
+
+// Notification Type
+enum NotificationType {
+  ORDER_UPDATE
+  PAYMENT
+  PROMO
+  DRIVER_ASSIGNED
+  CHAT_MESSAGE
+  SYSTEM
+  MERCHANT_UPDATE
+}
+
+// Complaint Category
+enum ComplaintCategory {
+  ORDER_ISSUE
+  PAYMENT_ISSUE
+  DRIVER_BEHAVIOR
+  FOOD_QUALITY
+  MERCHANT_ISSUE
+  APP_BUG
+  REFUND_REQUEST
+  OTHER
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  ESCALATED
+  RESOLVED
+  REJECTED
+  CLOSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ============================================
+// USER & AUTHENTICATION MODELS
+// ============================================
+
+model User {
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique @db.VarChar(255)
+  phone              String?          @unique @db.VarChar(20)
+  passwordHash       String?          @db.VarChar(255)
+  role               Role             @default(CUSTOMER)
+  isActive           Boolean          @default(true)
+  isVerified         Boolean          @default(false)
+  isEmailVerified    Boolean          @default(false)
+  isPhoneVerified    Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  lastLoginAt        DateTime?
+  
+  // Profile Info
+  fullName           String?          @db.VarChar(100)
+  nickname           String?          @db.VarChar(50)
+  dateOfBirth        DateTime?        @db.Date
+  gender             String?          @db.VarChar(10)
+  profilePicture     String?          @db.Text
+  
+  // OAuth/SSO
+  googleId           String?          @unique
+  appleId            String?          @unique
+  facebookId         String?          @unique
+  
+  // Location (default)
+  defaultLatitude    Float?
+  defaultLongitude   Float?
+
+  // Relations
+  addresses          UserAddress[]
+  refreshTokens      RefreshToken[]
+  otpTokens          OtpToken[]
+  passwordResetTokens PasswordResetToken[]
+  
+  // Customer specific
+  customerOrders     Order[]          @relation("CustomerOrders")
+  cart               Cart?
+  favoriteRestaurants FavoriteRestaurant[]
+  searchHistory      SearchHistory[]
+  reviewsGiven       Review[]         @relation("ReviewsGiven")
+  wallet             Wallet?
+  
+  // Driver specific
+  driverProfile      DriverProfile?
+  driverOrders       Order[]          @relation("DriverOrders")
+  driverRatingsReceived DriverRating[] @relation("DriverRatingsReceived")
+  
+  // Merchant specific
+  merchantProfile    Merchant?        @relation("MerchantOwner")
+  merchantStaff      MerchantStaff[]
+  
+  // Admin specific
+  auditLogs          AuditLog[]       @relation("AdminAuditLogs")
+  adminResponses     ComplaintResponse[] @relation("AdminResponses")
+  
+  // Shared
+  complaints         Complaint[]      @relation("UserComplaints")
+  notifications      Notification[]
+  chatMessages       ChatMessage[]
+  
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@map("users")
+}
+
+model UserAddress {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label           String    @db.VarChar(50)  // Home, Office, etc.
+  recipientName   String    @db.VarChar(100)
+  phone           String    @db.VarChar(20)
+  fullAddress     String    @db.Text
+  notes           String?   @db.Text         // Delivery instructions
+  latitude        Float
+  longitude       Float
+  isDefault       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  orders          Order[]
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model RefreshToken {
   id          Int       @id @default(autoincrement())
-  nama        String    @db.VarChar(255)
-  deskripsi   String?   @db.Text
-  alamat      String    @db.Text
-  imageUrl    String?   @db.Text
-  isActive    Boolean   @default(true)
+  token       String    @unique @db.VarChar(500)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  revoked     Boolean   @default(false)
+  deviceInfo  String?   @db.VarChar(255)
+  deviceType  String?   @db.VarChar(50)   // mobile, web
+  ipAddress   String?   @db.VarChar(50)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model OtpToken {
+  id          Int       @id @default(autoincrement())
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone       String?   @db.VarChar(20)
+  email       String?   @db.VarChar(255)
+  code        String    @db.VarChar(10)
+  type        String    @db.VarChar(20)  // login, verify_phone, verify_email
+  expiresAt   DateTime
+  verified    Boolean   @default(false)
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([phone])
+  @@index([email])
+  @@map("otp_tokens")
+}
+
+model PasswordResetToken {
+  id          Int       @id @default(autoincrement())
+  token       String    @unique @db.VarChar(255)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  used        Boolean   @default(false)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// MERCHANT & RESTAURANT MODELS
+// ============================================
+
+model Merchant {
+  id                  Int                @id @default(autoincrement())
+  ownerId             Int                @unique
+  owner               User               @relation("MerchantOwner", fields: [ownerId], references: [id])
+  
+  // Business Info
+  businessName        String             @db.VarChar(255)
+  slug                String             @unique @db.VarChar(255)
+  description         String?            @db.Text
+  phone               String             @db.VarChar(20)
+  email               String             @db.VarChar(255)
+  
+  // Location
+  address             String             @db.Text
+  latitude            Float
+  longitude           Float
+  city                String             @db.VarChar(100)
+  district            String?            @db.VarChar(100)
+  postalCode          String?            @db.VarChar(10)
+  
+  // Media
+  logoUrl             String?            @db.Text
+  bannerUrl           String?            @db.Text
+  photos              String[]           @db.Text
+  
+  // Business Details
+  cuisineTypes        String[]           @db.VarChar(50)
+  averageRating       Float              @default(0)
+  totalRatings        Int                @default(0)
+  totalOrders         Int                @default(0)
+  
+  // Operational Settings
+  minimumOrder        Int                @default(0)
+  deliveryRadius      Float              @default(5)    // in km
+  preparationTime     Int                @default(15)   // in minutes
+  isOpen              Boolean            @default(false)
+  isFeatured          Boolean            @default(false)
+  isActive            Boolean            @default(true)
+  
+  // Verification
+  verificationStatus  VerificationStatus @default(PENDING)
+  verifiedAt          DateTime?
+  verifiedBy          Int?
+  rejectionReason     String?            @db.Text
+  
+  // Commission
+  commissionRate      Float              @default(15)   // percentage
+  
+  // Timestamps
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  // Relations
+  operationalHours    MerchantOperationalHour[]
+  documents           MerchantDocument[]
+  categories          MenuCategory[]
+  products            Product[]
+  orders              Order[]
+  reviews             Review[]
+  staff               MerchantStaff[]
+  payouts             MerchantPayout[]
+  promos              Promo[]
+  favoritedBy         FavoriteRestaurant[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([city])
+  @@index([verificationStatus])
+  @@index([isActive, isOpen])
+  @@map("merchants")
+}
+
+model MerchantOperationalHour {
+  id            Int       @id @default(autoincrement())
+  merchantId    Int
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  dayOfWeek     Int       // 0 = Sunday, 6 = Saturday
+  openTime      String    @db.VarChar(5)  // HH:mm format
+  closeTime     String    @db.VarChar(5)
+  isClosed      Boolean   @default(false)
+
+  @@unique([merchantId, dayOfWeek])
+  @@map("merchant_operational_hours")
+}
+
+model MerchantDocument {
+  id            Int               @id @default(autoincrement())
+  merchantId    Int
+  merchant      Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  documentUrl   String            @db.Text
+  documentNumber String?          @db.VarChar(100)
+  expiryDate    DateTime?
+  status        VerificationStatus @default(PENDING)
+  verifiedAt    DateTime?
+  verifiedBy    Int?
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([merchantId])
+  @@map("merchant_documents")
+}
+
+model MerchantStaff {
+  id            Int       @id @default(autoincrement())
+  merchantId    Int
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          String    @db.VarChar(50)  // manager, cashier, kitchen
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@unique([merchantId, userId])
+  @@map("merchant_staff")
+}
+
+// ============================================
+// PRODUCT & MENU MODELS
+// ============================================
+
+model MasterCategory {
+  id            Int       @id @default(autoincrement())
+  name          String    @unique @db.VarChar(100)
+  slug          String    @unique @db.VarChar(100)
+  description   String?   @db.Text
+  iconUrl       String?   @db.Text
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+
+  @@map("master_categories")
+}
+
+model CuisineType {
+  id            Int       @id @default(autoincrement())
+  name          String    @unique @db.VarChar(100)
+  slug          String    @unique @db.VarChar(100)
+  iconUrl       String?   @db.Text
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@map("cuisine_types")
+}
+
+model MenuCategory {
+  id            Int       @id @default(autoincrement())
+  merchantId    Int
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name          String    @db.VarChar(100)
+  description   String?   @db.Text
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+
+  @@index([merchantId])
+  @@map("menu_categories")
 }
 
 model Product {
+  id                Int               @id @default(autoincrement())
+  merchantId        Int
+  merchant          Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  menuCategoryId    Int?
+  menuCategory      MenuCategory?     @relation(fields: [menuCategoryId], references: [id], onDelete: SetNull)
+  masterCategoryId  Int?
+  masterCategory    MasterCategory?   @relation(fields: [masterCategoryId], references: [id], onDelete: SetNull)
+  
+  // Product Info
+  name              String            @db.VarChar(255)
+  slug              String            @db.VarChar(255)
+  description       String            @db.Text
+  basePrice         Int
+  discountPrice     Int?
+  imageUrl          String            @db.Text
+  photos            String[]          @db.Text
+  
+  // Inventory
+  stock             Int?              // null = unlimited
+  isAvailable       Boolean           @default(true)
+  
+  // Metadata
+  tags              String[]          @db.VarChar(50)
+  isPopular         Boolean           @default(false)
+  isRecommended     Boolean           @default(false)
+  totalSold         Int               @default(0)
+  averageRating     Float             @default(0)
+  
+  // Preparation
+  preparationTime   Int?              // minutes, overrides merchant default
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  modifierGroups    ProductModifierGroup[]
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  reviews           Review[]
+
+  @@unique([merchantId, slug])
+  @@index([merchantId])
+  @@index([menuCategoryId])
+  @@index([isAvailable])
+  @@map("products")
+}
+
+// Product Modifiers (Toppings, Size, Spice Level, etc.)
+model ProductModifierGroup {
+  id              Int               @id @default(autoincrement())
+  productId       Int
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name            String            @db.VarChar(100)  // "Spice Level", "Size", "Add-ons"
+  isRequired      Boolean           @default(false)
+  minSelection    Int               @default(0)
+  maxSelection    Int               @default(1)
+  sortOrder       Int               @default(0)
+  
+  modifiers       ProductModifier[]
+
+  @@index([productId])
+  @@map("product_modifier_groups")
+}
+
+model ProductModifier {
+  id              Int                   @id @default(autoincrement())
+  groupId         Int
+  group           ProductModifierGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name            String                @db.VarChar(100)  // "Extra Spicy", "Large", "Cheese"
+  price           Int                   @default(0)       // additional price
+  isAvailable     Boolean               @default(true)
+  sortOrder       Int                   @default(0)
+
+  cartItemModifiers CartItemModifier[]
+  orderItemModifiers OrderItemModifier[]
+
+  @@index([groupId])
+  @@map("product_modifiers")
+}
+
+// ============================================
+// CART MODELS
+// ============================================
+
+model Cart {
   id            Int         @id @default(autoincrement())
-  nama          String      @db.VarChar(255)
-  deskripsi     String      @db.Text
-  harga         Int
-  imageUrl      String      @db.Text
-  kategori      String      @db.VarChar(100)
-  isAvailable   Boolean     @default(true)
+  userId        Int         @unique
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantId    Int?        // Cart is merchant-specific
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  restaurantId  Int?
-  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+
+  items         CartItem[]
+
+  @@map("carts")
 }
 
-model Offer {
-  id           Int      @id @default(autoincrement())
-  fee          Int
-  created_at   DateTime @default(now())
-  order_id     Int
-  order        orders   @relation(fields: [order_id], references: [id])
-  deliverer_id Int
-  deliverer    users    @relation(fields: [deliverer_id], references: [user_id])
+model CartItem {
+  id            Int         @id @default(autoincrement())
+  cartId        Int
+  cart          Cart        @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId     Int
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int         @default(1)
+  notes         String?     @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  @@unique([order_id, deliverer_id])
+  modifiers     CartItemModifier[]
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@map("cart_items")
 }
 
-// --- TAMBAHKAN MODEL BARU DI BAWAH INI ---
-model Message {
-  id         Int      @id @default(autoincrement())
-  text       String   @db.Text
-  created_at DateTime @default(now())
+model CartItemModifier {
+  id            Int             @id @default(autoincrement())
+  cartItemId    Int
+  cartItem      CartItem        @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  modifierId    Int
+  modifier      ProductModifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
 
-  // Relasi ke Order (sebagai "room")
-  order_id   Int
-  order      orders   @relation(fields: [order_id], references: [id])
-
-  // Relasi ke User (siapa pengirimnya)
-  sender_id  Int
-  sender     users    @relation(fields: [sender_id], references: [user_id])
+  @@unique([cartItemId, modifierId])
+  @@map("cart_item_modifiers")
 }
 
-// --- REFRESH TOKEN MODEL ---
-model RefreshToken {
-  id           Int      @id @default(autoincrement())
-  token        String   @unique @db.VarChar(500)
-  user_id      Int
-  user         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  expires_at   DateTime
-  created_at   DateTime @default(now())
-  revoked      Boolean  @default(false)
-  device_info  String?  @db.VarChar(255)
+// ============================================
+// ORDER MODELS
+// ============================================
+
+model Order {
+  id                  Int             @id @default(autoincrement())
+  orderNumber         String          @unique @db.VarChar(50)
   
-  @@index([user_id])
-  @@index([token])
+  // Participants
+  customerId          Int
+  customer            User            @relation("CustomerOrders", fields: [customerId], references: [id])
+  merchantId          Int
+  merchant            Merchant        @relation(fields: [merchantId], references: [id])
+  driverId            Int?
+  driver              User?           @relation("DriverOrders", fields: [driverId], references: [id])
+  
+  // Delivery
+  addressId           Int?
+  address             UserAddress?    @relation(fields: [addressId], references: [id])
+  deliveryAddress     String          @db.Text
+  deliveryLatitude    Float
+  deliveryLongitude   Float
+  deliveryNotes       String?         @db.Text
+  deliveryDistance    Float?          // in km
+  estimatedDeliveryTime DateTime?
+  actualDeliveryTime  DateTime?
+  
+  // Status
+  status              OrderStatus     @default(PENDING)
+  statusHistory       OrderStatusHistory[]
+  
+  // Pricing
+  subtotal            Int             // Sum of items
+  deliveryFee         Int             @default(0)
+  serviceFee          Int             @default(0)
+  platformFee         Int             @default(0)
+  discount            Int             @default(0)
+  totalAmount         Int
+  
+  // Commission
+  merchantCommission  Int             @default(0)
+  driverEarnings      Int             @default(0)
+  platformEarnings    Int             @default(0)
+  
+  // Payment
+  paymentMethod       PaymentMethod
+  paymentStatus       PaymentStatus   @default(PENDING)
+  paymentId           Int?            @unique
+  payment             Payment?
+  
+  // Voucher
+  voucherId           Int?
+  voucher             Voucher?        @relation(fields: [voucherId], references: [id])
+  
+  // Proof of Delivery
+  proofOfDeliveryUrl  String?         @db.Text
+  customerSignature   String?         @db.Text
+  
+  // Timestamps
+  orderedAt           DateTime        @default(now())
+  confirmedAt         DateTime?
+  preparedAt          DateTime?
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  cancellationReason  String?         @db.Text
+  cancelledBy         Int?
+  
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // Relations
+  items               OrderItem[]
+  review              Review?
+  driverRating        DriverRating?
+  chatRoom            ChatRoom?
+  complaints          Complaint[]
+  driverOffers        DriverOffer[]
+  refund              Refund?
+
+  @@index([customerId])
+  @@index([merchantId])
+  @@index([driverId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              Int         @id @default(autoincrement())
+  orderId         Int
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product     @relation(fields: [productId], references: [id])
+  
+  // Snapshot of product at order time
+  productName     String      @db.VarChar(255)
+  productImage    String      @db.Text
+  unitPrice       Int
+  quantity        Int
+  subtotal        Int
+  notes           String?     @db.Text
+
+  modifiers       OrderItemModifier[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderItemModifier {
+  id              Int             @id @default(autoincrement())
+  orderItemId     Int
+  orderItem       OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierId      Int
+  modifier        ProductModifier @relation(fields: [modifierId], references: [id])
+  
+  // Snapshot
+  modifierName    String          @db.VarChar(100)
+  modifierPrice   Int
+
+  @@map("order_item_modifiers")
+}
+
+model OrderStatusHistory {
+  id            Int          @id @default(autoincrement())
+  orderId       Int
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status        OrderStatus
+  notes         String?      @db.Text
+  changedBy     Int?         // User ID who changed the status
+  createdAt     DateTime     @default(now())
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// ============================================
+// DRIVER MODELS
+// ============================================
+
+model DriverProfile {
+  id              Int           @id @default(autoincrement())
+  userId          Int           @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Vehicle Info
+  vehicleType     String        @db.VarChar(50)  // motorcycle, bicycle, car
+  vehicleBrand    String?       @db.VarChar(100)
+  vehicleModel    String?       @db.VarChar(100)
+  plateNumber     String        @db.VarChar(20)
+  vehicleYear     Int?
+  vehicleColor    String?       @db.VarChar(50)
+  
+  // Status
+  status          DriverStatus  @default(OFFLINE)
+  isVerified      Boolean       @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  rejectionReason String?       @db.Text
+  
+  // Location (real-time)
+  currentLatitude Float?
+  currentLongitude Float?
+  lastLocationUpdate DateTime?
+  
+  // Performance
+  totalDeliveries Int           @default(0)
+  averageRating   Float         @default(0)
+  totalRatings    Int           @default(0)
+  acceptanceRate  Float         @default(100)
+  completionRate  Float         @default(100)
+  
+  // Finance
+  creditBalance   Int           @default(0)  // For COD orders
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  documents       DriverDocument[]
+  offers          DriverOffer[]
+
+  @@map("driver_profiles")
+}
+
+model DriverDocument {
+  id            Int               @id @default(autoincrement())
+  driverProfileId Int
+  driverProfile DriverProfile     @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  documentUrl   String            @db.Text
+  documentNumber String?          @db.VarChar(100)
+  expiryDate    DateTime?
+  status        VerificationStatus @default(PENDING)
+  verifiedAt    DateTime?
+  verifiedBy    Int?
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([driverProfileId])
+  @@map("driver_documents")
+}
+
+model DriverOffer {
+  id            Int           @id @default(autoincrement())
+  orderId       Int
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverProfileId Int
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  proposedFee   Int
+  status        String        @db.VarChar(20) // pending, accepted, rejected, expired
+  expiresAt     DateTime
+  createdAt     DateTime      @default(now())
+  respondedAt   DateTime?
+
+  @@unique([orderId, driverProfileId])
+  @@index([orderId])
+  @@index([driverProfileId])
+  @@map("driver_offers")
+}
+
+model DriverRating {
+  id            Int       @id @default(autoincrement())
+  orderId       Int       @unique
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverId      Int
+  driver        User      @relation("DriverRatingsReceived", fields: [driverId], references: [id])
+  score         Int       // 1-5
+  tags          String[]  @db.VarChar(50)  // "Friendly", "Fast", "Careful"
+  comment       String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@index([driverId])
+  @@map("driver_ratings")
+}
+
+// ============================================
+// PAYMENT & WALLET MODELS
+// ============================================
+
+model Payment {
+  id                Int           @id @default(autoincrement())
+  orderId           Int           @unique
+  order             Order         @relation(fields: [orderId], references: [id])
+  
+  // Payment Details
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  amount            Int
+  currency          String        @default("IDR") @db.VarChar(10)
+  
+  // Gateway Info
+  gatewayProvider   String?       @db.VarChar(50)  // midtrans, xendit, etc.
+  gatewayTransactionId String?    @db.VarChar(255)
+  gatewayPaymentUrl String?       @db.Text
+  gatewayResponse   Json?
+  
+  // Timestamps
+  paidAt            DateTime?
+  expiredAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@map("payments")
+}
+
+model Wallet {
+  id              Int             @id @default(autoincrement())
+  userId          Int             @unique
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance         Int             @default(0)
+  pendingBalance  Int             @default(0)  // Earnings waiting to be released
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  transactions    WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id              Int       @id @default(autoincrement())
+  walletId        Int
+  wallet          Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type            String    @db.VarChar(20)  // credit, debit, withdraw, topup
+  amount          Int
+  balanceBefore   Int
+  balanceAfter    Int
+  description     String    @db.VarChar(255)
+  referenceType   String?   @db.VarChar(50)  // order, payout, refund
+  referenceId     Int?
+  createdAt       DateTime  @default(now())
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+model MerchantPayout {
+  id              Int           @id @default(autoincrement())
+  merchantId      Int
+  merchant        Merchant      @relation(fields: [merchantId], references: [id])
+  amount          Int
+  status          PayoutStatus  @default(PENDING)
+  
+  // Bank Details
+  bankName        String        @db.VarChar(100)
+  bankAccountNumber String      @db.VarChar(50)
+  bankAccountName String        @db.VarChar(100)
+  
+  // Processing
+  requestedAt     DateTime      @default(now())
+  approvedBy      Int?
+  approvedAt      DateTime?
+  processedAt     DateTime?
+  completedAt     DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?       @db.Text
+  
+  // Reference
+  referenceNumber String?       @db.VarChar(100)
+  notes           String?       @db.Text
+
+  @@index([merchantId])
+  @@index([status])
+  @@map("merchant_payouts")
+}
+
+model Refund {
+  id              Int           @id @default(autoincrement())
+  orderId         Int           @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+  amount          Int
+  reason          String        @db.Text
+  status          PayoutStatus  @default(PENDING)
+  requestedBy     Int
+  approvedBy      Int?
+  requestedAt     DateTime      @default(now())
+  processedAt     DateTime?
+  notes           String?       @db.Text
+
+  @@map("refunds")
+}
+
+// ============================================
+// PROMO & VOUCHER MODELS
+// ============================================
+
+model Promo {
+  id              Int           @id @default(autoincrement())
+  merchantId      Int?          // null = platform promo
+  merchant        Merchant?     @relation(fields: [merchantId], references: [id])
+  
+  // Promo Details
+  title           String        @db.VarChar(255)
+  description     String        @db.Text
+  bannerUrl       String?       @db.Text
+  deepLink        String?       @db.Text
+  
+  // Timing
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean       @default(true)
+  
+  // Display
+  sortOrder       Int           @default(0)
+  showOnHomepage  Boolean       @default(false)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([isActive, startDate, endDate])
+  @@map("promos")
+}
+
+model Voucher {
+  id                  Int                   @id @default(autoincrement())
+  code                String                @unique @db.VarChar(50)
+  title               String                @db.VarChar(255)
+  description         String                @db.Text
+  
+  // Discount Type
+  type                PromoType
+  value               Int                   // Amount or percentage
+  maxDiscount         Int?                  // Max discount for percentage type
+  
+  // Conditions
+  minPurchase         Int                   @default(0)
+  minItems            Int?
+  applicability       VoucherApplicability  @default(ALL_USERS)
+  applicableMerchantIds Int[]
+  applicableCategoryIds Int[]
+  applicableProductIds  Int[]
+  applicableUserIds   Int[]
+  
+  // Limits
+  maxUsage            Int?                  // Total usage limit
+  maxUsagePerUser     Int                   @default(1)
+  currentUsage        Int                   @default(0)
+  dailyLimit          Int?
+  
+  // Timing
+  startDate           DateTime
+  endDate             DateTime
+  isActive            Boolean               @default(true)
+  
+  // For new users
+  isForNewUsers       Boolean               @default(false)
+  
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  // Relations
+  usages              VoucherUsage[]
+  orders              Order[]
+
+  @@index([code])
+  @@index([isActive, startDate, endDate])
+  @@map("vouchers")
+}
+
+model VoucherUsage {
+  id          Int       @id @default(autoincrement())
+  voucherId   Int
+  voucher     Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  userId      Int
+  orderId     Int?
+  usedAt      DateTime  @default(now())
+
+  @@index([voucherId, userId])
+  @@map("voucher_usages")
+}
+
+// ============================================
+// REVIEW & RATING MODELS
+// ============================================
+
+model Review {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId      Int
+  customer        User      @relation("ReviewsGiven", fields: [customerId], references: [id])
+  merchantId      Int
+  merchant        Merchant  @relation(fields: [merchantId], references: [id])
+  productId       Int?      // Optional: specific product review
+  product         Product?  @relation(fields: [productId], references: [id])
+  
+  // Rating
+  rating          Int       // 1-5
+  comment         String?   @db.Text
+  photos          String[]  @db.Text
+  tags            String[]  @db.VarChar(50)  // "Enak", "Porsi Banyak", "Cepat"
+  
+  // Merchant Response
+  merchantReply   String?   @db.Text
+  merchantRepliedAt DateTime?
+  
+  isVisible       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([merchantId])
+  @@index([customerId])
+  @@map("reviews")
+}
+
+// ============================================
+// CHAT MODELS
+// ============================================
+
+model ChatRoom {
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  closedAt      DateTime?
+
+  messages      ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id            Int       @id @default(autoincrement())
+  roomId        Int
+  room          ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId      Int
+  sender        User      @relation(fields: [senderId], references: [id])
+  message       String    @db.Text
+  messageType   String    @default("text") @db.VarChar(20)  // text, image, location
+  attachmentUrl String?   @db.Text
+  isRead        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@index([roomId])
+  @@map("chat_messages")
+}
+
+// ============================================
+// COMPLAINT & SUPPORT MODELS
+// ============================================
+
+model Complaint {
+  id              Int               @id @default(autoincrement())
+  ticketNumber    String            @unique @db.VarChar(50)
+  userId          Int
+  user            User              @relation("UserComplaints", fields: [userId], references: [id])
+  orderId         Int?
+  order           Order?            @relation(fields: [orderId], references: [id])
+  
+  category        ComplaintCategory
+  subject         String            @db.VarChar(255)
+  description     String            @db.Text
+  attachments     String[]          @db.Text
+  
+  status          ComplaintStatus   @default(PENDING)
+  priority        ComplaintPriority @default(MEDIUM)
+  
+  assignedTo      Int?
+  resolvedAt      DateTime?
+  resolution      String?           @db.Text
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  responses       ComplaintResponse[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([ticketNumber])
+  @@map("complaints")
+}
+
+model ComplaintResponse {
+  id            Int       @id @default(autoincrement())
+  complaintId   Int
+  complaint     Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  adminId       Int
+  admin         User      @relation("AdminResponses", fields: [adminId], references: [id])
+  message       String    @db.Text
+  isInternal    Boolean   @default(false)  // Internal notes vs customer-visible
+  createdAt     DateTime  @default(now())
+
+  @@index([complaintId])
+  @@map("complaint_responses")
+}
+
+// ============================================
+// NOTIFICATION MODELS
+// ============================================
+
+model Notification {
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  title         String           @db.VarChar(255)
+  body          String           @db.Text
+  data          Json?            // Additional data for deep linking
+  imageUrl      String?          @db.Text
+  isRead        Boolean          @default(false)
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model PushToken {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  token         String    @db.Text
+  deviceType    String    @db.VarChar(20)  // ios, android, web
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+// ============================================
+// SEARCH & DISCOVERY MODELS
+// ============================================
+
+model SearchHistory {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query         String    @db.VarChar(255)
+  resultCount   Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@map("search_history")
+}
+
+model FavoriteRestaurant {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantId    Int
+  merchant      Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, merchantId])
+  @@map("favorite_restaurants")
+}
+
+// ============================================
+// AUDIT LOG MODEL
+// ============================================
+
+model AuditLog {
+  id            Int         @id @default(autoincrement())
+  adminId       Int
+  admin         User        @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  action        AuditAction
+  entityType    String      @db.VarChar(50)  // user, order, merchant, etc.
+  entityId      Int?
+  oldValues     Json?
+  newValues     Json?
+  ipAddress     String?     @db.VarChar(50)
+  userAgent     String?     @db.VarChar(255)
+  description   String?     @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// CONFIGURATION & SETTINGS MODELS
+// ============================================
+
+model SystemSetting {
+  id            Int       @id @default(autoincrement())
+  key           String    @unique @db.VarChar(100)
+  value         String    @db.Text
+  description   String?   @db.Text
+  category      String    @db.VarChar(50)  // pricing, commission, general
+  updatedAt     DateTime  @updatedAt
+  updatedBy     Int?
+
+  @@map("system_settings")
+}
+
+model DeliveryZone {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(100)
+  city            String    @db.VarChar(100)
+  minDistance     Float     @default(0)
+  maxDistance     Float
+  baseFee         Int
+  perKmFee        Int
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("delivery_zones")
+}
+
+model Holiday {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(100)
+  date          DateTime  @db.Date
+  isRecurring   Boolean   @default(false)  // Yearly recurring
+  affectsMerchants Boolean @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@map("holidays")
 }
