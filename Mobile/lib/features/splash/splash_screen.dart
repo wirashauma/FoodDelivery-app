@@ -70,17 +70,20 @@ class _SplashScreenState extends State<SplashScreen>
           Positioned(
             top: -50,
             left: -50,
-            child: CircleElement(size: 200, color: Colors.red.withOpacity(0.1)),
+            child: CircleElement(
+                size: 200, color: Colors.red.withValues(alpha: 0.1)),
           ),
           Positioned(
             bottom: -100,
             right: -80,
-            child: CircleElement(size: 300, color: Colors.red.withOpacity(0.1)),
+            child: CircleElement(
+                size: 300, color: Colors.red.withValues(alpha: 0.1)),
           ),
           Positioned(
             top: 150,
             right: 20,
-            child: CircleElement(size: 50, color: Colors.red.withOpacity(0.2)),
+            child: CircleElement(
+                size: 50, color: Colors.red.withValues(alpha: 0.2)),
           ),
 
           // Logo utama dengan animasi
