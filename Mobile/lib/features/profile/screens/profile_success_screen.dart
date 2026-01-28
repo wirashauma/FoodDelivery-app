@@ -38,7 +38,7 @@ class _ProfileSuccessScreenState extends State<ProfileSuccessScreen> {
       final role = decodedToken['user']['role']; // 'USER' atau 'DELIVERER'
       return role;
     } catch (e) {
-      print("Error decode token: $e");
+      debugPrint("Error decode token: $e");
       return null;
     }
   }
@@ -48,7 +48,7 @@ class _ProfileSuccessScreenState extends State<ProfileSuccessScreen> {
 
     try {
       // [MODIFIKASI]: Panggil fungsi baru
-      final String? role = await _getRoleFromToken(); 
+      final String? role = await _getRoleFromToken();
 
       if (!mounted) return;
 

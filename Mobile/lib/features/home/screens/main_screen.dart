@@ -72,7 +72,7 @@ class _MainScreenState extends State<MainScreen> {
         icon,
         color: _selectedIndex == index
             ? Colors.white
-            : Colors.white.withOpacity(0.7),
+            : Colors.white.withValues(alpha: 0.7),
         size: _selectedIndex == index ? 30 : 28,
       ),
       onPressed: () => _onItemTapped(index),
