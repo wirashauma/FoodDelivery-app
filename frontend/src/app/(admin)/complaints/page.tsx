@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Modal from '@/components/Modal';
+import { complaintsAPI } from '@/lib/api';
 import {
   MessageSquare,
   User,
@@ -15,6 +16,7 @@ import {
   ChevronDown,
   Send,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 
 // Types
@@ -25,111 +27,64 @@ interface Complaint {
   message: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   reporter: {
-    id: number;
-    name: string;
+    user_id: number;
+    nama: string;
     email: string;
   };
   responses: {
     id: number;
     message: string;
-    createdAt: string;
-    adminName: string;
+    created_at: string;
+    admin: { nama: string };
   }[];
 }
 
-// Mock data
-const mockComplaints: Complaint[] = [
-  {
-    id: 1,
-    type: 'USER',
-    subject: 'Pesanan tidak sampai',
-    message: 'Saya sudah menunggu 2 jam tapi pesanan belum sampai. Driver tidak bisa dihubungi.',
-    status: 'PENDING',
-    priority: 'HIGH',
-    createdAt: '2026-01-28T10:30:00Z',
-    updatedAt: '2026-01-28T10:30:00Z',
-    reporter: { id: 1, name: 'John Doe', email: 'john@example.com' },
-    responses: [],
-  },
-  {
-    id: 2,
-    type: 'DELIVERER',
-    subject: 'Customer tidak ada di tempat',
-    message: 'Saya sudah sampai di lokasi tapi customer tidak ada dan tidak mengangkat telepon.',
-    status: 'IN_PROGRESS',
-    priority: 'MEDIUM',
-    createdAt: '2026-01-27T14:20:00Z',
-    updatedAt: '2026-01-28T09:00:00Z',
-    reporter: { id: 2, name: 'Ahmad Driver', email: 'ahmad@example.com' },
-    responses: [
-      { id: 1, message: 'Kami sedang menghubungi customer.', createdAt: '2026-01-28T09:00:00Z', adminName: 'Admin' },
-    ],
-  },
-  {
-    id: 3,
-    type: 'USER',
-    subject: 'Makanan rusak saat diterima',
-    message: 'Pesanan saya tumpah dan tidak bisa dimakan. Mohon refund.',
-    status: 'RESOLVED',
-    priority: 'HIGH',
-    createdAt: '2026-01-26T18:45:00Z',
-    updatedAt: '2026-01-27T11:30:00Z',
-    reporter: { id: 3, name: 'Sarah User', email: 'sarah@example.com' },
-    responses: [
-      { id: 1, message: 'Mohon maaf atas ketidaknyamanannya. Kami akan memproses refund.', createdAt: '2026-01-27T10:00:00Z', adminName: 'Admin' },
-      { id: 2, message: 'Refund sudah diproses ke akun Anda.', createdAt: '2026-01-27T11:30:00Z', adminName: 'Admin' },
-    ],
-  },
-  {
-    id: 4,
-    type: 'DELIVERER',
-    subject: 'Pembayaran belum masuk',
-    message: 'Saldo penghasilan saya belum masuk ke rekening sudah 3 hari.',
-    status: 'PENDING',
-    priority: 'MEDIUM',
-    createdAt: '2026-01-28T08:00:00Z',
-    updatedAt: '2026-01-28T08:00:00Z',
-    reporter: { id: 4, name: 'Budi Kurir', email: 'budi@example.com' },
-    responses: [],
-  },
-  {
-    id: 5,
-    type: 'USER',
-    subject: 'Driver kasar',
-    message: 'Driver berbicara kasar saat mengantarkan pesanan.',
-    status: 'REJECTED',
-    priority: 'LOW',
-    createdAt: '2026-01-25T12:00:00Z',
-    updatedAt: '2026-01-26T14:00:00Z',
-    reporter: { id: 5, name: 'Lisa Customer', email: 'lisa@example.com' },
-    responses: [
-      { id: 1, message: 'Setelah investigasi, tidak ditemukan bukti yang mendukung keluhan ini.', createdAt: '2026-01-26T14:00:00Z', adminName: 'Admin' },
-    ],
-  },
-];
+interface ComplaintStats {
+  total: number;
+  pending: number;
+  inProgress: number;
+  resolved: number;
+  rejected: number;
+}
 
 export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [stats, setStats] = useState<ComplaintStats>({ total: 0, pending: 0, inProgress: 0, resolved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [responseText, setResponseText] = useState('');
+  const [sendingResponse, setSendingResponse] = useState(false);
   const [filterType, setFilterType] = useState<'ALL' | 'USER' | 'DELIVERER'>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setComplaints(mockComplaints);
+  const loadComplaints = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = {};
+      if (filterType !== 'ALL') params.type = filterType;
+      if (filterStatus !== 'ALL') params.status = filterStatus;
+      
+      const response = await complaintsAPI.getAll(params);
+      setComplaints(response.data || []);
+      setStats(response.stats || { total: 0, pending: 0, inProgress: 0, resolved: 0, rejected: 0 });
+    } catch (error) {
+      console.error('Error fetching complaints:', error);
+      setComplaints([]);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
+    }
+  }, [filterType, filterStatus]);
+
+  useEffect(() => {
+    loadComplaints();
+  }, [loadComplaints]);
 
   const getStatusBadge = (status: Complaint['status']) => {
     switch (status) {
@@ -172,43 +127,45 @@ export default function ComplaintsPage() {
     if (filterType !== 'ALL' && c.type !== filterType) return false;
     if (filterStatus !== 'ALL' && c.status !== filterStatus) return false;
     if (searchQuery && !c.subject.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !c.reporter.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        !c.reporter.nama?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const stats = {
-    total: complaints.length,
-    pending: complaints.filter(c => c.status === 'PENDING').length,
-    inProgress: complaints.filter(c => c.status === 'IN_PROGRESS').length,
-    resolved: complaints.filter(c => c.status === 'RESOLVED').length,
+  const handleSendResponse = async () => {
+    if (!responseText.trim() || !selectedComplaint || sendingResponse) return;
+    
+    setSendingResponse(true);
+    try {
+      const response = await complaintsAPI.addResponse(selectedComplaint.id, responseText);
+      setSelectedComplaint(response.data);
+      // Update in list
+      setComplaints(complaints.map(c => 
+        c.id === selectedComplaint.id ? response.data : c
+      ));
+      setResponseText('');
+    } catch (error) {
+      console.error('Error sending response:', error);
+      alert('Gagal mengirim balasan');
+    } finally {
+      setSendingResponse(false);
+    }
   };
 
-  const handleSendResponse = () => {
-    if (!responseText.trim() || !selectedComplaint) return;
-    
-    // Add response to complaint (mock)
-    const newResponse = {
-      id: Date.now(),
-      message: responseText,
-      createdAt: new Date().toISOString(),
-      adminName: 'Admin',
-    };
-    
-    setSelectedComplaint({
-      ...selectedComplaint,
-      responses: [...selectedComplaint.responses, newResponse],
-      status: 'IN_PROGRESS',
-    });
-    setResponseText('');
-  };
-
-  const handleUpdateStatus = (status: Complaint['status']) => {
+  const handleUpdateStatus = async (status: Complaint['status']) => {
     if (!selectedComplaint) return;
     
-    setSelectedComplaint({ ...selectedComplaint, status });
-    setComplaints(complaints.map(c => 
-      c.id === selectedComplaint.id ? { ...c, status } : c
-    ));
+    try {
+      const response = await complaintsAPI.updateStatus(selectedComplaint.id, status);
+      setSelectedComplaint(response.data);
+      setComplaints(complaints.map(c => 
+        c.id === selectedComplaint.id ? response.data : c
+      ));
+      // Refresh stats
+      loadComplaints();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Gagal mengubah status');
+    }
   };
 
   if (loading) {
@@ -230,9 +187,18 @@ export default function ComplaintsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Keluhan</h1>
-        <p className="text-sm text-gray-500">Kelola keluhan dari user dan driver</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Keluhan</h1>
+          <p className="text-sm text-gray-500">Kelola keluhan dari user dan driver</p>
+        </div>
+        <button
+          onClick={loadComplaints}
+          className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+        >
+          <RefreshCw size={16} />
+          Refresh
+        </button>
       </div>
 
       {/* Stats */}
@@ -388,10 +354,10 @@ export default function ComplaintsPage() {
                     </div>
                     <p className="text-sm text-gray-500 truncate">{complaint.message}</p>
                     <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                      <span>{complaint.reporter.name}</span>
+                      <span>{complaint.reporter.nama || 'Unknown'}</span>
                       <span>•</span>
-                      <span>{new Date(complaint.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                      {complaint.responses.length > 0 && (
+                      <span>{new Date(complaint.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      {complaint.responses && complaint.responses.length > 0 && (
                         <>
                           <span>•</span>
                           <span>{complaint.responses.length} balasan</span>
@@ -434,7 +400,7 @@ export default function ComplaintsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-800">{selectedComplaint.subject}</h3>
-                <p className="text-sm text-gray-500">{selectedComplaint.reporter.name} • {selectedComplaint.reporter.email}</p>
+                <p className="text-sm text-gray-500">{selectedComplaint.reporter.nama || 'Unknown'} • {selectedComplaint.reporter.email}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusBadge(selectedComplaint.status)}`}>
                     {getStatusIcon(selectedComplaint.status)}
@@ -451,7 +417,7 @@ export default function ComplaintsPage() {
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-sm text-gray-700">{selectedComplaint.message}</p>
               <p className="text-xs text-gray-400 mt-2">
-                {new Date(selectedComplaint.createdAt).toLocaleDateString('id-ID', { 
+                {new Date(selectedComplaint.created_at).toLocaleDateString('id-ID', { 
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', 
                   hour: '2-digit', minute: '2-digit' 
                 })}
@@ -459,14 +425,14 @@ export default function ComplaintsPage() {
             </div>
 
             {/* Responses */}
-            {selectedComplaint.responses.length > 0 && (
+            {selectedComplaint.responses && selectedComplaint.responses.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-700 text-sm">Balasan Admin</h4>
                 {selectedComplaint.responses.map(response => (
                   <div key={response.id} className="bg-primary-50 rounded-xl p-4 ml-4 border-l-4 border-primary-500">
                     <p className="text-sm text-gray-700">{response.message}</p>
                     <p className="text-xs text-gray-400 mt-2">
-                      {response.adminName} • {new Date(response.createdAt).toLocaleDateString('id-ID', { 
+                      {response.admin?.nama || 'Admin'} • {new Date(response.created_at).toLocaleDateString('id-ID', { 
                         day: 'numeric', month: 'short', year: 'numeric', 
                         hour: '2-digit', minute: '2-digit' 
                       })}
@@ -485,16 +451,17 @@ export default function ComplaintsPage() {
                   onChange={(e) => setResponseText(e.target.value)}
                   placeholder="Tulis balasan..."
                   rows={3}
-                  className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm resize-none"
+                  disabled={sendingResponse}
+                  className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm resize-none disabled:bg-gray-100"
                 />
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleSendResponse}
-                    disabled={!responseText.trim()}
+                    disabled={!responseText.trim() || sendingResponse}
                     className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                   >
                     <Send size={16} />
-                    Kirim Balasan
+                    {sendingResponse ? 'Mengirim...' : 'Kirim Balasan'}
                   </button>
                   <button
                     onClick={() => handleUpdateStatus('RESOLVED')}

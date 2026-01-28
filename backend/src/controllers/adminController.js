@@ -110,15 +110,71 @@ exports.getDashboardStats = async (req, res) => {
       }
     });
 
+    // Get average rating from Rating model
+    const ratingStats = await prisma.rating.aggregate({
+      _avg: { rating: true },
+      _count: { id: true }
+    });
+    const avgRating = ratingStats._avg.rating ? Math.round(ratingStats._avg.rating * 10) / 10 : 0;
+    const totalRatings = ratingStats._count.id;
+
+    // Calculate satisfaction rate (completed orders / total non-cancelled orders)
+    const nonCancelledOrders = totalOrders - cancelledOrders;
+    const satisfactionRate = nonCancelledOrders > 0
+      ? Math.round((completedOrders / nonCancelledOrders) * 100)
+      : 0;
+
+    // Get growth comparison (this month vs last month)
+    const lastMonthStart = new Date(monthStart);
+    lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+    const lastMonthEnd = new Date(monthStart);
+    lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
+
+    const lastMonthUsers = await prisma.users.count({
+      where: {
+        created_at: { gte: lastMonthStart, lte: lastMonthEnd },
+        role: 'USER'
+      }
+    });
+    const lastMonthDeliverers = await prisma.users.count({
+      where: {
+        created_at: { gte: lastMonthStart, lte: lastMonthEnd },
+        role: 'DELIVERER'
+      }
+    });
+    const lastMonthOrders = await prisma.orders.count({
+      where: {
+        created_at: { gte: lastMonthStart, lte: lastMonthEnd }
+      }
+    });
+    const lastMonthRevenue = await prisma.orders.aggregate({
+      _sum: { final_fee: true },
+      where: {
+        status: 'COMPLETED',
+        final_fee: { not: null },
+        created_at: { gte: lastMonthStart, lte: lastMonthEnd }
+      }
+    });
+
+    // Calculate growth percentages
+    const userGrowth = lastMonthUsers > 0 ? Math.round(((newUsersThisMonth - lastMonthUsers) / lastMonthUsers) * 100) : 0;
+    const delivererGrowth = lastMonthDeliverers > 0 ? Math.round(((totalDeliverers - lastMonthDeliverers) / lastMonthDeliverers) * 100) : 0;
+    const orderGrowth = lastMonthOrders > 0 ? Math.round(((monthOrders - lastMonthOrders) / lastMonthOrders) * 100) : 0;
+    const revenueGrowth = (lastMonthRevenue._sum.final_fee || 0) > 0 
+      ? Math.round(((totalRevenue - (lastMonthRevenue._sum.final_fee || 0)) / (lastMonthRevenue._sum.final_fee || 1)) * 100) 
+      : 0;
+
     res.json({
       status: 'sukses',
       data: {
         users: {
           total: totalUsers,
-          newThisMonth: newUsersThisMonth
+          newThisMonth: newUsersThisMonth,
+          growth: userGrowth
         },
         deliverers: {
-          total: totalDeliverers
+          total: totalDeliverers,
+          growth: delivererGrowth
         },
         orders: {
           total: totalOrders,
@@ -127,11 +183,18 @@ exports.getDashboardStats = async (req, res) => {
           cancelled: cancelledOrders,
           today: todayOrders,
           thisWeek: weekOrders,
-          thisMonth: monthOrders
+          thisMonth: monthOrders,
+          growth: orderGrowth
         },
         revenue: {
-          total: totalRevenue
+          total: totalRevenue,
+          growth: revenueGrowth
         },
+        ratings: {
+          average: avgRating,
+          total: totalRatings
+        },
+        satisfaction: satisfactionRate,
         recentOrders
       }
     });

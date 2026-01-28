@@ -50,15 +50,35 @@ interface TopDeliverer {
 }
 
 interface DashboardStats {
-  totalUsers: number;
-  totalDeliverers: number;
-  totalOrders: number;
-  totalRevenue: number;
-  pendingDeliverers: number;
-  activeOrders: number;
+  users: {
+    total: number;
+    newThisMonth: number;
+    growth: number;
+  };
+  deliverers: {
+    total: number;
+    growth: number;
+  };
+  orders: {
+    total: number;
+    completed: number;
+    pending: number;
+    cancelled: number;
+    today: number;
+    thisWeek: number;
+    thisMonth: number;
+    growth: number;
+  };
+  revenue: {
+    total: number;
+    growth: number;
+  };
+  ratings: {
+    average: number;
+    total: number;
+  };
+  satisfaction: number;
   recentOrders: RecentOrder[];
-  userGrowth: { date: string; count: number }[];
-  orderGrowth: { date: string; count: number; revenue: number }[];
 }
 
 // Elegant Stats Card Component
@@ -269,48 +289,48 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
         <ElegantStatsCard
           title="Total Users"
-          value={stats?.totalUsers || 0}
+          value={stats?.users?.total || 0}
           icon={Users}
           color="blue"
-          trend={{ value: 12, isPositive: true }}
+          trend={stats?.users?.growth !== undefined ? { value: Math.abs(stats.users.growth), isPositive: stats.users.growth >= 0 } : undefined}
           subtitle="Pengguna aktif"
         />
         <ElegantStatsCard
           title="Total Deliverer"
-          value={stats?.totalDeliverers || 0}
+          value={stats?.deliverers?.total || 0}
           icon={Bike}
           color="primary"
-          trend={{ value: 8, isPositive: true }}
+          trend={stats?.deliverers?.growth !== undefined ? { value: Math.abs(stats.deliverers.growth), isPositive: stats.deliverers.growth >= 0 } : undefined}
           subtitle="Kurir terdaftar"
         />
         <ElegantStatsCard
           title="Total Orders"
-          value={stats?.totalOrders || 0}
+          value={stats?.orders?.total || 0}
           icon={Package}
           color="orange"
-          trend={{ value: 15, isPositive: true }}
+          trend={stats?.orders?.growth !== undefined ? { value: Math.abs(stats.orders.growth), isPositive: stats.orders.growth >= 0 } : undefined}
           subtitle="Pesanan masuk"
         />
         <ElegantStatsCard
           title="Rating Avg"
-          value="4.8"
+          value={stats?.ratings?.average || 0}
           icon={Star}
           color="pink"
-          subtitle="Dari 500+ review"
+          subtitle={`Dari ${stats?.ratings?.total || 0} review`}
         />
         <ElegantStatsCard
           title="Satisfaction"
-          value="95%"
+          value={`${stats?.satisfaction || 0}%`}
           icon={Target}
           color="cyan"
           subtitle="Kepuasan pelanggan"
         />
         <ElegantStatsCard
           title="Revenue"
-          value={formatShortCurrency(stats?.totalRevenue || 0)}
+          value={formatShortCurrency(stats?.revenue?.total || 0)}
           icon={DollarSign}
           color="purple"
-          trend={{ value: 20, isPositive: true }}
+          trend={stats?.revenue?.growth !== undefined ? { value: Math.abs(stats.revenue.growth), isPositive: stats.revenue.growth >= 0 } : undefined}
           subtitle="Total pendapatan"
         />
       </div>
@@ -319,25 +339,25 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <QuickActionCard
           title="Pesanan Pending"
-          description={`${stats?.activeOrders || 0} pesanan menunggu`}
+          description={`${stats?.orders?.pending || 0} pesanan menunggu`}
           icon={Clock}
           color="bg-gradient-to-r from-amber-500 to-orange-500"
         />
         <QuickActionCard
-          title="Deliverer Pending"
-          description={`${stats?.pendingDeliverers || 0} menunggu approval`}
+          title="Hari Ini"
+          description={`${stats?.orders?.today || 0} pesanan masuk`}
           icon={Bike}
           color="bg-gradient-to-r from-purple-500 to-violet-500"
         />
         <QuickActionCard
-          title="Pesanan Aktif"
-          description="Lihat pesanan dalam proses"
+          title="Pesanan Selesai"
+          description={`${stats?.orders?.completed || 0} pesanan selesai`}
           icon={Activity}
           color="bg-gradient-to-r from-primary-500 to-primary-700"
         />
         <QuickActionCard
-          title="Laporan Cepat"
-          description="Generate laporan harian"
+          title="Minggu Ini"
+          description={`${stats?.orders?.thisWeek || 0} pesanan total`}
           icon={Zap}
           color="bg-gradient-to-r from-blue-500 to-indigo-500"
         />

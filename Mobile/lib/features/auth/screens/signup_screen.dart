@@ -243,7 +243,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Facebook signup segera hadir!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
                         icon: Image.asset('assets/images/facebook_logo.png',
                             height: 20),
                         label: const Text('Facebook'),
@@ -252,13 +259,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
+                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Google signup segera hadir!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
                         icon: Image.asset('assets/images/google_logo.png',
                             height: 20),
                         label: const Text('Google'),
@@ -267,6 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
+                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),

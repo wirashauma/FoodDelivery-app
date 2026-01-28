@@ -10,6 +10,7 @@ router.get('/my-history', authMiddleware.verifyToken, authorize('USER'), orderCo
 router.get('/my-active-jobs', authMiddleware.verifyToken, authorize('USER'), orderController.getMyActiveJobs);
 router.post('/:id/update-status', authMiddleware.verifyToken, orderController.updateOrderStatus);
 router.get('/:id/offers', authMiddleware.verifyToken, orderController.getOrderOffers);
+router.post('/:id/cancel', authMiddleware.verifyToken, authorize('USER'), orderController.cancelOrder);
 
 // [NEW] Deliverer-specific routes
 router.get('/available', authMiddleware.verifyToken, authorize('DELIVERER'), orderController.getAvailableOrders);

@@ -14,6 +14,7 @@ import {
   EyeOff,
   Check,
 } from 'lucide-react';
+import { userAPI, authAPI } from '@/lib/api';
 
 interface AdminUser {
   username: string;
@@ -100,11 +101,15 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      // Simulated save - in real implementation, this would call an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await userAPI.updateProfile({
+        username: profileForm.username,
+        email: profileForm.email,
+        phone: profileForm.phone,
+      });
       toast.success('Profil berhasil disimpan');
-    } catch {
-      toast.error('Gagal menyimpan profil');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      toast.error(err.response?.data?.error || 'Gagal menyimpan profil');
     } finally {
       setSaving(false);
     }
@@ -121,12 +126,12 @@ export default function SettingsPage() {
     }
     setSaving(true);
     try {
-      // Simulated save - in real implementation, this would call an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await authAPI.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       toast.success('Password berhasil diubah');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch {
-      toast.error('Gagal mengubah password');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      toast.error(err.response?.data?.error || 'Gagal mengubah password');
     } finally {
       setSaving(false);
     }
@@ -135,7 +140,9 @@ export default function SettingsPage() {
   const handleSaveNotifications = async () => {
     setSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Notification settings are stored locally for now
+      // In future, this could be synced with backend
+      localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
       toast.success('Pengaturan notifikasi berhasil disimpan');
     } catch {
       toast.error('Gagal menyimpan pengaturan');
@@ -147,7 +154,8 @@ export default function SettingsPage() {
   const handleSaveAppearance = async () => {
     setSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Appearance settings are stored locally
+      localStorage.setItem('appearanceSettings', JSON.stringify(appearanceSettings));
       toast.success('Pengaturan tampilan berhasil disimpan');
     } catch {
       toast.error('Gagal menyimpan pengaturan');
@@ -155,6 +163,26 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  // Load saved settings from localStorage
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notificationSettings');
+    if (savedNotifications) {
+      try {
+        setNotificationSettings(JSON.parse(savedNotifications));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    const savedAppearance = localStorage.getItem('appearanceSettings');
+    if (savedAppearance) {
+      try {
+        setAppearanceSettings(JSON.parse(savedAppearance));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
 
   const renderProfileSection = () => (
     <div className="space-y-4 sm:space-y-6">

@@ -437,12 +437,6 @@ exports.getDelivererCompletedOrders = async (req, res) => {
             email: true,
           },
         },
-        items: {
-          select: {
-            nama: true,
-            quantity: true,
-          },
-        },
       },
       orderBy: {
         created_at: 'desc',
@@ -470,5 +464,64 @@ exports.getDelivererCompletedOrders = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Gagal mengambil pesanan yang sudah selesai' });
+  }
+};
+
+/**
+ * Cancel an order
+ * POST /orders/:orderId/cancel
+ */
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+    const { reason } = req.body;
+
+    const order = await prisma.orders.findUnique({
+      where: { id: parseInt(orderId) },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
+    }
+
+    // Only owner can cancel
+    if (order.user_id !== userId) {
+      return res.status(403).json({ error: 'Anda tidak memiliki akses untuk membatalkan pesanan ini' });
+    }
+
+    // Can only cancel if not completed or already cancelled
+    if (order.status === 'COMPLETED') {
+      return res.status(400).json({ error: 'Pesanan yang sudah selesai tidak dapat dibatalkan' });
+    }
+
+    if (order.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Pesanan sudah dibatalkan' });
+    }
+
+    // Can only cancel if ON_DELIVERY hasn't started (for now, allow but with warning)
+    const updatedOrder = await prisma.orders.update({
+      where: { id: parseInt(orderId) },
+      data: { 
+        status: 'CANCELLED',
+      },
+      include: {
+        user: {
+          select: { nama: true, email: true }
+        },
+        deliverer: {
+          select: { nama: true, email: true }
+        }
+      }
+    });
+
+    res.json({
+      status: 'sukses',
+      message: 'Pesanan berhasil dibatalkan',
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error('Cancel order error:', error);
+    res.status(500).json({ error: 'Gagal membatalkan pesanan' });
   }
 };

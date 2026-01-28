@@ -225,10 +225,10 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Quick Login Buttons - Only for Sign In */}
-          {!isSignUp && (
+          {/* Quick Login Buttons - DEVELOPMENT ONLY */}
+          {!isSignUp && process.env.NODE_ENV === 'development' && (
             <div className="mb-6">
-              <p className="text-sm text-gray-500 text-center mb-3">Login Cepat (Demo)</p>
+              <p className="text-sm text-gray-500 text-center mb-3">Login Cepat (Development Only)</p>
               <div className="grid grid-cols-3 gap-2">
                 {QUICK_LOGIN_ACCOUNTS.map((account) => {
                   const Icon = account.icon;
@@ -254,7 +254,7 @@ export default function AuthPage() {
           )}
 
           {/* Divider */}
-          {!isSignUp && (
+          {!isSignUp && process.env.NODE_ENV === 'development' && (
             <div className="flex items-center gap-4 mb-6">
               <div className="flex-1 h-px bg-gray-200"></div>
               <span className="text-sm text-gray-400">atau</span>

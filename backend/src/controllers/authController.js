@@ -271,3 +271,155 @@ exports.getSessions = async (req, res) => {
     res.status(500).json({ error: 'Gagal mengambil sessions' });
   }
 };
+
+// Fungsi untuk Forgot Password - Request Reset
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email dibutuhkan' });
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { email },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({ 
+        message: 'Jika email terdaftar, link reset password akan dikirim' 
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Invalidate existing tokens
+    await prisma.passwordResetToken.updateMany({
+      where: { user_id: user.user_id, used: false },
+      data: { used: true },
+    });
+
+    // Create new token
+    await prisma.passwordResetToken.create({
+      data: {
+        token: hashedToken,
+        user_id: user.user_id,
+        expires_at: expiresAt,
+      },
+    });
+
+    // In production, send email with resetToken
+    // For now, return token (REMOVE IN PRODUCTION)
+    console.log(`Password reset token for ${email}: ${resetToken}`);
+
+    res.json({ 
+      message: 'Jika email terdaftar, link reset password akan dikirim',
+      // DEVELOPMENT ONLY - remove in production
+      resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Gagal memproses request' });
+  }
+};
+
+// Fungsi untuk Reset Password dengan Token
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token dan password baru dibutuhkan' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password minimal 6 karakter' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: {
+        token: hashedToken,
+        used: false,
+        expires_at: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      return res.status(400).json({ error: 'Token tidak valid atau sudah expired' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and mark token as used
+    await prisma.$transaction([
+      prisma.users.update({
+        where: { user_id: resetToken.user_id },
+        data: { password_hash: hashedPassword },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+      // Revoke all refresh tokens for security
+      prisma.refreshToken.updateMany({
+        where: { user_id: resetToken.user_id },
+        data: { revoked: true },
+      }),
+    ]);
+
+    res.json({ message: 'Password berhasil direset. Silakan login dengan password baru.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Gagal reset password' });
+  }
+};
+
+// Fungsi untuk Change Password (authenticated)
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Password lama dan baru dibutuhkan' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password minimal 6 karakter' });
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User tidak ditemukan' });
+    }
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isValid) {
+      return res.status(400).json({ error: 'Password lama salah' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.users.update({
+      where: { user_id: userId },
+      data: { password_hash: hashedPassword },
+    });
+
+    res.json({ message: 'Password berhasil diubah' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Gagal mengubah password' });
+  }
+};

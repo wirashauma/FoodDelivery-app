@@ -214,6 +214,18 @@ export const authAPI = {
     const response = await api.post('/profile/me', data);
     return response.data;
   },
+  forgotPassword: async (email: string) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+  resetPassword: async (token: string, newPassword: string) => {
+    const response = await api.post('/auth/reset-password', { token, newPassword });
+    return response.data;
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const response = await api.post('/auth/change-password', { currentPassword, newPassword });
+    return response.data;
+  },
 };
 
 // Products API (for User)
@@ -495,6 +507,59 @@ export const exportAPI = {
   },
   deliverers: async () => {
     const response = await api.get('/admin/export/deliverers');
+    return response.data;
+  },
+};
+
+// Complaints API
+export const complaintsAPI = {
+  // Admin: Get all complaints
+  getAll: async (params?: { status?: string; type?: string; priority?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/complaints', { params });
+    return response.data;
+  },
+  // Get complaint by ID
+  getById: async (id: number) => {
+    const response = await api.get(`/complaints/${id}`);
+    return response.data;
+  },
+  // Admin: Update complaint status
+  updateStatus: async (id: number, status: string) => {
+    const response = await api.put(`/complaints/${id}/status`, { status });
+    return response.data;
+  },
+  // Admin: Add response to complaint
+  addResponse: async (id: number, message: string) => {
+    const response = await api.post(`/complaints/${id}/respond`, { message });
+    return response.data;
+  },
+  // User/Deliverer: Create complaint
+  create: async (data: { subject: string; message: string; orderId?: number; priority?: string }) => {
+    const response = await api.post('/complaints', data);
+    return response.data;
+  },
+  // User/Deliverer: Get my complaints
+  getMy: async () => {
+    const response = await api.get('/complaints/my');
+    return response.data;
+  },
+};
+
+// Ratings API
+export const ratingsAPI = {
+  // Rate an order
+  rateOrder: async (orderId: number, data: { score: number; comment?: string }) => {
+    const response = await api.post(`/ratings/order/${orderId}`, data);
+    return response.data;
+  },
+  // Check if order is rated
+  checkOrderRating: async (orderId: number) => {
+    const response = await api.get(`/ratings/order/${orderId}/check`);
+    return response.data;
+  },
+  // Get deliverer ratings
+  getDelivererRatings: async (delivererId: number, params?: { page?: number; limit?: number }) => {
+    const response = await api.get(`/ratings/deliverer/${delivererId}`, { params });
     return response.data;
   },
 };

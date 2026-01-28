@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:titipin_app/features/auth/screens/signup_screen.dart';
 import 'package:titipin_app/features/auth/screens/auth_gate.dart';
+import 'package:titipin_app/features/auth/screens/forgot_password_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -154,7 +155,14 @@ class _SignInScreenState extends State<SignInScreen> {
                       ],
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
                       child: const Text('Forgot password?',
                           style: TextStyle(color: Colors.red)),
                     ),
@@ -220,7 +228,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Facebook login segera hadir!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
                         icon: Image.asset('assets/images/facebook_logo.png',
                             height: 20),
                         label: const Text('Facebook'),
@@ -229,13 +244,21 @@ class _SignInScreenState extends State<SignInScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
+                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Google login segera hadir!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
                         icon: Image.asset('assets/images/google_logo.png',
                             height: 20),
                         label: const Text('Google'),
@@ -244,6 +267,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
+                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),

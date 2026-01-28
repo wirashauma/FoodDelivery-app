@@ -43,6 +43,47 @@ exports.verifyToken = (req, res, next) => {
 };
 
 /**
+ * [NEW] Alias for verifyToken - authenticate
+ * Used consistently across new routes
+ */
+exports.authenticate = exports.verifyToken;
+
+/**
+ * [NEW] Optional Authentication
+ * Attempts to authenticate user but doesn't fail if no token
+ * Useful for endpoints that work for both authenticated and guest users
+ */
+exports.optionalAuthenticate = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  
+  // No token provided - continue as guest
+  if (!authHeader) {
+    req.user = null;
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey', (err, decodedPayload) => {
+    if (err) {
+      // Invalid token - continue as guest
+      req.user = null;
+    } else {
+      // Valid token - set user info
+      req.user = decodedPayload.user;
+      if (decodedPayload.platform) {
+        req.tokenPlatform = decodedPayload.platform;
+      }
+    }
+    next();
+  });
+};
+
+/**
  * [NEW] Generate JWT Token with Platform Support
  * 
  * Returns a JWT token that includes:
