@@ -1120,6 +1120,167 @@ exports.verifyDriver = async (req, res) => {
   }
 };
 
+// ==================== VERIFICATION STATUS ====================
+
+/**
+ * Get verification status for deliverer onboarding
+ */
+exports.getVerificationStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user has driver profile
+    const profile = await prisma.driverProfile.findUnique({
+      where: { userId },
+      include: {
+        documents: true
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Driver profile not found',
+        data: {
+          isRegistered: true,
+          hasDriverProfile: false,
+          hasCompletedOnboarding: false,
+          hasKTP: false,
+          hasSIM: false,
+          hasNPWP: false,
+          hasFaceVerification: false,
+          isFullyVerified: false
+        }
+      });
+    }
+
+    // Check documents
+    const hasKTP = profile.documents.some(d => d.type === 'KTP' && d.status !== 'REJECTED');
+    const hasSIM = profile.documents.some(d => d.type === 'SIM' && d.status !== 'REJECTED');
+    const hasNPWP = profile.documents.some(d => d.type === 'NPWP' && d.status !== 'REJECTED');
+    const hasFace = profile.documents.some(d => d.type === 'FACE' && d.status !== 'REJECTED');
+
+    const isFullyVerified = profile.isVerified || 
+      (hasKTP && hasSIM && hasFace && profile.verificationStatus === 'APPROVED');
+
+    res.json({
+      success: true,
+      data: {
+        isRegistered: true,
+        hasDriverProfile: true,
+        hasCompletedOnboarding: true,
+        hasKTP,
+        hasSIM,
+        hasNPWP,
+        hasFaceVerification: hasFace,
+        isFullyVerified,
+        verificationStatus: profile.verificationStatus,
+        message: isFullyVerified ? 'Fully verified' : 'Verification in progress'
+      }
+    });
+  } catch (error) {
+    console.error('Get verification status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Upload face verification photo
+ */
+exports.uploadFaceVerification = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { faceImage, verificationMethod } = req.body;
+
+    const profile = await prisma.driverProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Driver profile not found'
+      });
+    }
+
+    // In production, you would upload to cloud storage
+    // For now, we'll store a reference
+    const documentUrl = `face_${userId}_${Date.now()}.jpg`;
+
+    // Check if face document exists
+    const existingFace = await prisma.driverDocument.findFirst({
+      where: {
+        driverProfileId: profile.id,
+        type: 'FACE'
+      }
+    });
+
+    let document;
+    if (existingFace) {
+      document = await prisma.driverDocument.update({
+        where: { id: existingFace.id },
+        data: {
+          documentUrl,
+          status: 'PENDING',
+          verifiedAt: null,
+          verifiedBy: null
+        }
+      });
+    } else {
+      document = await prisma.driverDocument.create({
+        data: {
+          driverProfileId: profile.id,
+          type: 'FACE',
+          documentUrl,
+          status: 'PENDING'
+        }
+      });
+    }
+
+    // Check if all required documents are uploaded
+    const allDocs = await prisma.driverDocument.findMany({
+      where: { driverProfileId: profile.id }
+    });
+
+    const hasKTP = allDocs.some(d => d.type === 'KTP');
+    const hasSIM = allDocs.some(d => d.type === 'SIM');
+    const hasFace = allDocs.some(d => d.type === 'FACE');
+
+    // If all required docs are present, update verification status
+    if (hasKTP && hasSIM && hasFace) {
+      await prisma.driverProfile.update({
+        where: { id: profile.id },
+        data: {
+          verificationStatus: 'PENDING',
+          isVerified: true // Auto-verify for demo; in production, this would be manual
+        }
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Face verification photo uploaded successfully',
+      data: {
+        documentId: document.id,
+        isFullyVerified: hasKTP && hasSIM && hasFace
+      }
+    });
+  } catch (error) {
+    console.error('Upload face verification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    });
+  }
+};
+
 // ==================== HELPER FUNCTIONS ====================
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
