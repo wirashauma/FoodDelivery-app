@@ -33,57 +33,162 @@ const generateRefreshToken = () => {
   return crypto.randomBytes(64).toString('hex');
 };
 
+// Valid roles sesuai dengan Prisma enum Role
+const VALID_ROLES = ['CUSTOMER', 'DELIVERER', 'MERCHANT', 'ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF', 'FINANCE_STAFF', 'CUSTOMER_SERVICE'];
+
+// Public roles yang bisa dipilih saat registrasi (tanpa admin roles)
+const PUBLIC_REGISTRATION_ROLES = ['CUSTOMER', 'DELIVERER', 'MERCHANT'];
+
+// Helper validasi email format
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Helper validasi password strength
+const validatePassword = (password) => {
+  const errors = [];
+  if (password.length < 8) {
+    errors.push('Minimal 8 karakter');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Minimal 1 huruf besar');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Minimal 1 huruf kecil');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Minimal 1 angka');
+  }
+  return errors;
+};
+
 // Fungsi untuk Register
 exports.register = async (req, res) => {
   try {
-    // <-- MODIFIKASI: Ambil 'role' dari body
-    const { email, password, role } = req.body;
+    const { email, password, role, fullName, phone } = req.body;
 
-    // <-- TAMBAHAN: Validasi input dasar
-    if (!email || !password || !role) {
-      return res.status(400).json({ error: 'Email, password, dan role dibutuhkan' });
+    // Validasi: Field wajib tidak boleh kosong
+    if (!email || !email.trim()) {
+      return res.status(400).json({ 
+        error: 'email_required',
+        message: 'Alamat email wajib diisi',
+        fields: { email: 'Masukkan alamat email Anda' }
+      });
     }
 
-    // <-- TAMBAHAN: Validasi role (termasuk ADMIN)
-    const validRoles = ['USER', 'DELIVERER', 'ADMIN'];
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ error: 'Role tidak valid. Gunakan USER, DELIVERER, atau ADMIN' });
+    if (!password) {
+      return res.status(400).json({ 
+        error: 'password_required',
+        message: 'Password wajib diisi',
+        fields: { password: 'Masukkan password Anda' }
+      });
     }
 
+    // Validasi: Format email
+    if (!isValidEmail(email.trim())) {
+      return res.status(400).json({ 
+        error: 'invalid_email',
+        message: 'Format email tidak valid',
+        fields: { email: 'Masukkan alamat email yang valid' }
+      });
+    }
+
+    // Validasi: Panjang email
+    if (email.length > 255) {
+      return res.status(400).json({ 
+        error: 'email_too_long',
+        message: 'Email terlalu panjang',
+        fields: { email: 'Email maksimal 255 karakter' }
+      });
+    }
+
+    // Validasi: Kekuatan password
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'weak_password',
+        message: 'Password belum memenuhi persyaratan keamanan',
+        fields: { password: passwordErrors }
+      });
+    }
+
+    // Validasi: Role - default ke CUSTOMER jika tidak diberikan atau kosong
+    let userRole = 'CUSTOMER'; // Default role
+    if (role && role.trim()) {
+      const normalizedRole = role.trim().toUpperCase();
+      
+      if (!VALID_ROLES.includes(normalizedRole)) {
+        return res.status(400).json({ 
+          error: 'invalid_role',
+          message: 'Tipe akun tidak valid',
+          fields: { role: 'Pilih tipe akun yang tersedia' }
+        });
+      }
+      userRole = normalizedRole;
+    }
+
+    // Validasi: Nomor telepon (jika diberikan)
+    if (phone && phone.trim()) {
+      const phoneRegex = /^(\+62|62|0)[0-9]{9,13}$/;
+      if (!phoneRegex.test(phone.replace(/[\s-]/g, ''))) {
+        return res.status(400).json({ 
+          error: 'invalid_phone',
+          message: 'Format nomor telepon tidak valid',
+          fields: { phone: 'Masukkan nomor telepon yang valid (contoh: 08123456789)' }
+        });
+      }
+    }
+
+    // Cek apakah email sudah digunakan
     const existing = await prisma.user.findUnique({
-      where: { email: email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (existing) {
-      return res.status(400).json({ error: 'Email sudah digunakan!' });
+      return res.status(409).json({ 
+        error: 'email_exists',
+        message: 'Email ini sudah terdaftar',
+        fields: { email: 'Gunakan email lain atau masuk ke akun Anda' }
+      });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
     const result = await prisma.user.create({
       data: {
-        email: email,
+        email: email.trim().toLowerCase(),
         passwordHash: hashed,
-        role: role, // <-- MODIFIKASI: Simpan role ke database
+        role: userRole,
+        fullName: fullName ? fullName.trim() : null,
+        phone: phone ? phone.trim() : null,
       },
       select: {
         id: true,
         email: true,
-        role: true, // <-- MODIFIKASI: Kembalikan role di response
+        role: true,
+        fullName: true,
       },
     });
 
     res.status(201).json({
-      status: 'sukses',
-      message: 'User berhasil dibuat!',
+      status: 'success',
+      message: 'Akun berhasil dibuat',
       data: result,
     });
   } catch (error) {
     if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'Email sudah digunakan!' });
+      return res.status(409).json({ 
+        error: 'email_exists',
+        message: 'Email ini sudah terdaftar',
+        fields: { email: 'Gunakan email lain atau masuk ke akun Anda' }
+      });
     }
-    console.error(error);
-    res.status(500).json({ error: 'Gagal register user' });
+    console.error('Register error:', error);
+    res.status(500).json({ 
+      error: 'server_error',
+      message: 'Terjadi kesalahan. Silakan coba beberapa saat lagi.' 
+    });
   }
 };
 
@@ -92,16 +197,62 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validasi: Email wajib diisi
+    if (!email || !email.trim()) {
+      return res.status(400).json({ 
+        error: 'email_required',
+        message: 'Masukkan alamat email Anda',
+        fields: { email: 'Email wajib diisi' }
+      });
+    }
+
+    // Validasi: Password wajib diisi
+    if (!password) {
+      return res.status(400).json({ 
+        error: 'password_required',
+        message: 'Masukkan password Anda',
+        fields: { password: 'Password wajib diisi' }
+      });
+    }
+
+    // Validasi: Format email
+    if (!isValidEmail(email.trim())) {
+      return res.status(400).json({ 
+        error: 'invalid_email',
+        message: 'Format email tidak valid',
+        fields: { email: 'Masukkan alamat email yang valid' }
+      });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (!user) {
-      return res.status(400).json({ error: 'Email atau password salah' });
+      return res.status(401).json({ 
+        error: 'invalid_credentials',
+        message: 'Email atau password tidak sesuai',
+        fields: { _form: 'Periksa kembali email dan password Anda' }
+      });
+    }
+
+    // Cek apakah akun dinonaktifkan/suspended
+    if (user.isActive === false) {
+      return res.status(403).json({ 
+        error: 'account_disabled',
+        message: 'Akun Anda tidak aktif',
+        fields: { _form: 'Hubungi customer service untuk bantuan' }
+      });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) return res.status(400).json({ error: 'Email atau password salah' });
+    if (!valid) {
+      return res.status(401).json({ 
+        error: 'invalid_credentials',
+        message: 'Email atau password tidak sesuai',
+        fields: { _form: 'Periksa kembali email dan password Anda' }
+      });
+    }
 
     const platform = req.platform || 'web';
     const deviceInfo = req.headers['user-agent'] || 'unknown';
@@ -121,7 +272,8 @@ exports.login = async (req, res) => {
     });
 
     res.json({
-      message: 'Login berhasil!',
+      status: 'success',
+      message: 'Login berhasil',
       accessToken,
       refreshToken,
       expiresIn: 900, // 15 minutes in seconds
@@ -133,8 +285,11 @@ exports.login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal login' });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'server_error',
+      message: 'Terjadi kesalahan. Silakan coba beberapa saat lagi.'
+    });
   }
 };
 

@@ -1,35 +1,44 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Generate unique ticket number
+function generateTicketNumber() {
+  const prefix = 'TKT';
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}-${timestamp}-${random}`;
+}
+
 // Create a new complaint (User or Deliverer)
 const createComplaint = async (req, res) => {
   try {
-    const { subject, message, orderId, priority } = req.body;
+    const { subject, description, category, orderId, priority } = req.body;
     const userId = req.user.userId;
-    const userRole = req.user.role;
 
-    if (!subject || !message) {
-      return res.status(400).json({ error: 'Subject and message are required' });
+    if (!subject || !description) {
+      return res.status(400).json({ error: 'Subject and description are required' });
     }
 
-    // Determine complaint type based on user role
-    const type = userRole === 'DELIVERER' ? 'DELIVERER' : 'USER';
+    if (!category) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
 
     const complaint = await prisma.complaint.create({
       data: {
-        type,
+        ticketNumber: generateTicketNumber(),
+        category: category || 'OTHER',
         subject,
-        message,
+        description,
         priority: priority || 'MEDIUM',
-        order_id: orderId || null,
-        reporter_id: userId,
+        orderId: orderId ? parseInt(orderId) : null,
+        userId: userId,
       },
       include: {
-        reporter: {
-          select: { user_id: true, nama: true, email: true }
+        user: {
+          select: { id: true, fullName: true, email: true }
         },
         order: {
-          select: { id: true, status: true }
+          select: { id: true, status: true, orderNumber: true }
         }
       }
     });
@@ -50,21 +59,21 @@ const getMyComplaints = async (req, res) => {
     const userId = req.user.userId;
 
     const complaints = await prisma.complaint.findMany({
-      where: { reporter_id: userId },
+      where: { userId: userId },
       include: {
         responses: {
           include: {
             admin: {
-              select: { nama: true }
+              select: { fullName: true }
             }
           },
-          orderBy: { created_at: 'asc' }
+          orderBy: { createdAt: 'asc' }
         },
         order: {
-          select: { id: true, status: true }
+          select: { id: true, status: true, orderNumber: true }
         }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
 
     res.json({ data: complaints });
@@ -84,19 +93,19 @@ const getComplaintById = async (req, res) => {
     const complaint = await prisma.complaint.findUnique({
       where: { id: parseInt(id) },
       include: {
-        reporter: {
-          select: { user_id: true, nama: true, email: true }
+        user: {
+          select: { id: true, fullName: true, email: true }
         },
         responses: {
           include: {
             admin: {
-              select: { nama: true }
+              select: { fullName: true }
             }
           },
-          orderBy: { created_at: 'asc' }
+          orderBy: { createdAt: 'asc' }
         },
         order: {
-          select: { id: true, status: true, item_id: true }
+          select: { id: true, status: true, orderNumber: true }
         }
       }
     });
@@ -106,7 +115,7 @@ const getComplaintById = async (req, res) => {
     }
 
     // Only allow owner or admin to view
-    if (userRole !== 'ADMIN' && complaint.reporter_id !== userId) {
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && userRole !== 'CUSTOMER_SERVICE' && complaint.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -122,35 +131,35 @@ const getComplaintById = async (req, res) => {
 // Get all complaints (Admin)
 const getAllComplaints = async (req, res) => {
   try {
-    const { status, type, priority, page = 1, limit = 20 } = req.query;
+    const { status, category, priority, page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
     if (status) where.status = status;
-    if (type) where.type = type;
+    if (category) where.category = category;
     if (priority) where.priority = priority;
 
     const [complaints, total] = await Promise.all([
       prisma.complaint.findMany({
         where,
         include: {
-          reporter: {
-            select: { user_id: true, nama: true, email: true, role: true }
+          user: {
+            select: { id: true, fullName: true, email: true, role: true }
           },
           responses: {
             include: {
-              admin: { select: { nama: true } }
+              admin: { select: { fullName: true } }
             },
-            orderBy: { created_at: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 1
           },
           order: {
-            select: { id: true, status: true }
+            select: { id: true, status: true, orderNumber: true }
           }
         },
         orderBy: [
           { priority: 'desc' },
-          { created_at: 'desc' }
+          { createdAt: 'desc' }
         ],
         skip,
         take: parseInt(limit)
@@ -169,7 +178,9 @@ const getAllComplaints = async (req, res) => {
       pending: 0,
       inProgress: 0,
       resolved: 0,
-      rejected: 0
+      rejected: 0,
+      escalated: 0,
+      closed: 0
     };
 
     stats.forEach(s => {
@@ -177,6 +188,8 @@ const getAllComplaints = async (req, res) => {
       if (s.status === 'IN_PROGRESS') statsMap.inProgress = s._count.status;
       if (s.status === 'RESOLVED') statsMap.resolved = s._count.status;
       if (s.status === 'REJECTED') statsMap.rejected = s._count.status;
+      if (s.status === 'ESCALATED') statsMap.escalated = s._count.status;
+      if (s.status === 'CLOSED') statsMap.closed = s._count.status;
     });
 
     res.json({
@@ -199,18 +212,25 @@ const getAllComplaints = async (req, res) => {
 const updateComplaintStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, resolution } = req.body;
 
-    if (!['PENDING', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'].includes(status)) {
+    const validStatuses = ['PENDING', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED', 'REJECTED', 'CLOSED'];
+    if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updateData = { status };
+    if (status === 'RESOLVED' || status === 'CLOSED') {
+      updateData.resolvedAt = new Date();
+      if (resolution) updateData.resolution = resolution;
     }
 
     const complaint = await prisma.complaint.update({
       where: { id: parseInt(id) },
-      data: { status },
+      data: updateData,
       include: {
-        reporter: {
-          select: { user_id: true, nama: true, email: true }
+        user: {
+          select: { id: true, fullName: true, email: true }
         },
         responses: true
       }
@@ -230,7 +250,7 @@ const updateComplaintStatus = async (req, res) => {
 const addResponse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { message } = req.body;
+    const { message, isInternal } = req.body;
     const adminId = req.user.userId;
 
     if (!message) {
@@ -242,12 +262,13 @@ const addResponse = async (req, res) => {
       prisma.complaintResponse.create({
         data: {
           message,
-          complaint_id: parseInt(id),
-          admin_id: adminId
+          isInternal: isInternal || false,
+          complaintId: parseInt(id),
+          adminId: adminId
         },
         include: {
           admin: {
-            select: { nama: true }
+            select: { fullName: true }
           }
         }
       }),
@@ -257,14 +278,14 @@ const addResponse = async (req, res) => {
           status: 'IN_PROGRESS'
         },
         include: {
-          reporter: {
-            select: { user_id: true, nama: true, email: true }
+          user: {
+            select: { id: true, fullName: true, email: true }
           },
           responses: {
             include: {
-              admin: { select: { nama: true } }
+              admin: { select: { fullName: true } }
             },
-            orderBy: { created_at: 'asc' }
+            orderBy: { createdAt: 'asc' }
           }
         }
       })

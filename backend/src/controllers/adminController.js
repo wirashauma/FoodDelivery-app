@@ -7,57 +7,56 @@ const prisma = new PrismaClient();
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Get total users count
-    const totalUsers = await prisma.users.count({
-      where: { role: 'USER' }
+    // Get total customers count
+    const totalUsers = await prisma.user.count({
+      where: { role: 'CUSTOMER' }
     });
 
     // Get total deliverers count
-    const totalDeliverers = await prisma.users.count({
+    const totalDeliverers = await prisma.user.count({
       where: { role: 'DELIVERER' }
     });
 
     // Get total orders count
-    const totalOrders = await prisma.orders.count();
+    const totalOrders = await prisma.order.count();
 
     // Get completed orders count
-    const completedOrders = await prisma.orders.count({
+    const completedOrders = await prisma.order.count({
       where: { status: 'COMPLETED' }
     });
 
     // Get pending orders count
-    const pendingOrders = await prisma.orders.count({
+    const pendingOrders = await prisma.order.count({
       where: { 
         status: {
-          in: ['WAITING_FOR_OFFERS', 'OFFER_ACCEPTED', 'ON_DELIVERY']
+          in: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'ON_DELIVERY']
         }
       }
     });
 
     // Get cancelled orders count
-    const cancelledOrders = await prisma.orders.count({
+    const cancelledOrders = await prisma.order.count({
       where: { status: 'CANCELLED' }
     });
 
-    // Get total revenue (sum of final_fee from completed orders)
-    const revenueData = await prisma.orders.aggregate({
+    // Get total revenue (sum of totalAmount from completed orders)
+    const revenueData = await prisma.order.aggregate({
       _sum: {
-        final_fee: true
+        totalAmount: true
       },
       where: {
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        status: 'COMPLETED'
       }
     });
 
-    const totalRevenue = revenueData._sum.final_fee || 0;
+    const totalRevenue = revenueData._sum.totalAmount || 0;
 
     // Get today's orders
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayOrders = await prisma.orders.count({
+    const todayOrders = await prisma.order.count({
       where: {
-        created_at: {
+        createdAt: {
           gte: today
         }
       }
@@ -66,9 +65,9 @@ exports.getDashboardStats = async (req, res) => {
     // Get this week's orders
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekOrders = await prisma.orders.count({
+    const weekOrders = await prisma.order.count({
       where: {
-        created_at: {
+        createdAt: {
           gte: weekAgo
         }
       }
@@ -78,45 +77,51 @@ exports.getDashboardStats = async (req, res) => {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-    const monthOrders = await prisma.orders.count({
+    const monthOrders = await prisma.order.count({
       where: {
-        created_at: {
+        createdAt: {
           gte: monthStart
         }
       }
     });
 
     // Get recent orders (last 10)
-    const recentOrders = await prisma.orders.findMany({
+    const recentOrders = await prisma.order.findMany({
       take: 10,
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
       include: {
-        user: {
-          select: { nama: true, email: true }
+        customer: {
+          select: { fullName: true, email: true }
         },
-        deliverer: {
-          select: { nama: true, email: true }
+        driver: {
+          select: { fullName: true, email: true }
         }
       }
     });
 
     // Get new users this month
-    const newUsersThisMonth = await prisma.users.count({
+    const newUsersThisMonth = await prisma.user.count({
       where: {
-        created_at: {
+        createdAt: {
           gte: monthStart
         },
-        role: 'USER'
+        role: 'CUSTOMER'
       }
     });
 
-    // Get average rating from Rating model
-    const ratingStats = await prisma.rating.aggregate({
-      _avg: { rating: true },
-      _count: { id: true }
-    });
-    const avgRating = ratingStats._avg.rating ? Math.round(ratingStats._avg.rating * 10) / 10 : 0;
-    const totalRatings = ratingStats._count.id;
+    // Get average rating from DriverRating model
+    let avgRating = 0;
+    let totalRatings = 0;
+    try {
+      const ratingStats = await prisma.driverRating.aggregate({
+        _avg: { rating: true },
+        _count: { id: true }
+      });
+      avgRating = ratingStats._avg.rating ? Math.round(ratingStats._avg.rating * 10) / 10 : 0;
+      totalRatings = ratingStats._count.id || 0;
+    } catch (e) {
+      // DriverRating table might be empty
+    }
 
     // Calculate satisfaction rate (completed orders / total non-cancelled orders)
     const nonCancelledOrders = totalOrders - cancelledOrders;
@@ -130,42 +135,41 @@ exports.getDashboardStats = async (req, res) => {
     const lastMonthEnd = new Date(monthStart);
     lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
 
-    const lastMonthUsers = await prisma.users.count({
+    const lastMonthUsers = await prisma.user.count({
       where: {
-        created_at: { gte: lastMonthStart, lte: lastMonthEnd },
-        role: 'USER'
+        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
+        role: 'CUSTOMER'
       }
     });
-    const lastMonthDeliverers = await prisma.users.count({
+    const lastMonthDeliverers = await prisma.user.count({
       where: {
-        created_at: { gte: lastMonthStart, lte: lastMonthEnd },
+        createdAt: { gte: lastMonthStart, lte: lastMonthEnd },
         role: 'DELIVERER'
       }
     });
-    const lastMonthOrders = await prisma.orders.count({
+    const lastMonthOrdersCount = await prisma.order.count({
       where: {
-        created_at: { gte: lastMonthStart, lte: lastMonthEnd }
+        createdAt: { gte: lastMonthStart, lte: lastMonthEnd }
       }
     });
-    const lastMonthRevenue = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const lastMonthRevenue = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: lastMonthStart, lte: lastMonthEnd }
+        createdAt: { gte: lastMonthStart, lte: lastMonthEnd }
       }
     });
 
     // Calculate growth percentages
     const userGrowth = lastMonthUsers > 0 ? Math.round(((newUsersThisMonth - lastMonthUsers) / lastMonthUsers) * 100) : 0;
     const delivererGrowth = lastMonthDeliverers > 0 ? Math.round(((totalDeliverers - lastMonthDeliverers) / lastMonthDeliverers) * 100) : 0;
-    const orderGrowth = lastMonthOrders > 0 ? Math.round(((monthOrders - lastMonthOrders) / lastMonthOrders) * 100) : 0;
-    const revenueGrowth = (lastMonthRevenue._sum.final_fee || 0) > 0 
-      ? Math.round(((totalRevenue - (lastMonthRevenue._sum.final_fee || 0)) / (lastMonthRevenue._sum.final_fee || 1)) * 100) 
+    const orderGrowth = lastMonthOrdersCount > 0 ? Math.round(((monthOrders - lastMonthOrdersCount) / lastMonthOrdersCount) * 100) : 0;
+    const revenueGrowth = (lastMonthRevenue._sum.totalAmount || 0) > 0 
+      ? Math.round(((totalRevenue - (lastMonthRevenue._sum.totalAmount || 0)) / (lastMonthRevenue._sum.totalAmount || 1)) * 100) 
       : 0;
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         users: {
           total: totalUsers,
@@ -195,7 +199,15 @@ exports.getDashboardStats = async (req, res) => {
           total: totalRatings
         },
         satisfaction: satisfactionRate,
-        recentOrders
+        recentOrders: recentOrders.map(order => ({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt,
+          customer: order.customer ? { nama: order.customer.fullName, email: order.customer.email } : null,
+          driver: order.driver ? { nama: order.driver.fullName, email: order.driver.email } : null
+        }))
       }
     });
   } catch (error) {
@@ -215,43 +227,54 @@ exports.getAllUsers = async (req, res) => {
       AND: [
         search ? {
           OR: [
-            { nama: { contains: search, mode: 'insensitive' } },
+            { fullName: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } }
           ]
         } : {},
-        role ? { role: role } : { role: { in: ['USER', 'DELIVERER'] } }
+        role ? { role: role } : { role: { in: ['CUSTOMER', 'DELIVERER', 'MERCHANT'] } }
       ]
     };
 
     const [users, total] = await Promise.all([
-      prisma.users.findMany({
+      prisma.user.findMany({
         where: whereClause,
         skip,
         take: parseInt(limit),
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         select: {
-          user_id: true,
+          id: true,
           email: true,
-          nama: true,
-          no_hp: true,
-          alamat: true,
+          fullName: true,
+          phone: true,
           role: true,
-          foto_profil: true,
-          created_at: true,
+          profilePicture: true,
+          isActive: true,
+          createdAt: true,
           _count: {
             select: {
-              orders: true,
-              deliveredOrders: true
+              customerOrders: true,
+              driverOrders: true
             }
           }
         }
       }),
-      prisma.users.count({ where: whereClause })
+      prisma.user.count({ where: whereClause })
     ]);
 
     res.json({
-      status: 'sukses',
-      data: users,
+      status: 'success',
+      data: users.map(user => ({
+        user_id: user.id,
+        email: user.email,
+        nama: user.fullName,
+        no_hp: user.phone,
+        role: user.role,
+        foto_profil: user.profilePicture,
+        isActive: user.isActive,
+        created_at: user.createdAt,
+        ordersCount: user._count.customerOrders,
+        deliveriesCount: user._count.driverOrders
+      })),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -269,38 +292,38 @@ exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const user = await prisma.users.findUnique({
-      where: { user_id: parseInt(id) },
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        tgl_lahir: true,
-        no_hp: true,
-        alamat: true,
+        fullName: true,
+        dateOfBirth: true,
+        phone: true,
         role: true,
-        foto_profil: true,
-        created_at: true,
-        orders: {
+        profilePicture: true,
+        isActive: true,
+        createdAt: true,
+        customerOrders: {
           take: 10,
-          orderBy: { created_at: 'desc' },
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
-            item_id: true,
+            orderNumber: true,
             status: true,
-            final_fee: true,
-            created_at: true
+            totalAmount: true,
+            createdAt: true
           }
         },
-        deliveredOrders: {
+        driverOrders: {
           take: 10,
-          orderBy: { created_at: 'desc' },
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
-            item_id: true,
+            orderNumber: true,
             status: true,
-            final_fee: true,
-            created_at: true
+            totalAmount: true,
+            createdAt: true
           }
         }
       }
@@ -310,7 +333,22 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
     }
 
-    res.json({ status: 'sukses', data: user });
+    res.json({ 
+      status: 'success', 
+      data: {
+        user_id: user.id,
+        email: user.email,
+        nama: user.fullName,
+        tgl_lahir: user.dateOfBirth,
+        no_hp: user.phone,
+        role: user.role,
+        foto_profil: user.profilePicture,
+        isActive: user.isActive,
+        created_at: user.createdAt,
+        orders: user.customerOrders,
+        deliveredOrders: user.driverOrders
+      }
+    });
   } catch (error) {
     console.error('Get user by ID error:', error);
     res.status(500).json({ error: 'Gagal mengambil data pengguna' });
@@ -320,28 +358,40 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama, no_hp, alamat, tgl_lahir } = req.body;
+    const { nama, no_hp, tgl_lahir, isActive } = req.body;
 
-    const updatedUser = await prisma.users.update({
-      where: { user_id: parseInt(id) },
+    const updatedUser = await prisma.user.update({
+      where: { id: parseInt(id) },
       data: {
-        nama,
-        no_hp,
-        alamat,
-        tgl_lahir: tgl_lahir ? new Date(tgl_lahir) : undefined
+        fullName: nama,
+        phone: no_hp,
+        dateOfBirth: tgl_lahir ? new Date(tgl_lahir) : undefined,
+        isActive: isActive
       },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        no_hp: true,
-        alamat: true,
+        fullName: true,
+        phone: true,
         role: true,
-        created_at: true
+        isActive: true,
+        createdAt: true
       }
     });
 
-    res.json({ status: 'sukses', message: 'Data pengguna berhasil diperbarui', data: updatedUser });
+    res.json({ 
+      status: 'success', 
+      message: 'Data pengguna berhasil diperbarui', 
+      data: {
+        user_id: updatedUser.id,
+        email: updatedUser.email,
+        nama: updatedUser.fullName,
+        no_hp: updatedUser.phone,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+        created_at: updatedUser.createdAt
+      }
+    });
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Gagal memperbarui data pengguna' });
@@ -353,29 +403,21 @@ exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
     // Check if user exists
-    const user = await prisma.users.findUnique({
-      where: { user_id: parseInt(id) }
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) }
     });
 
     if (!user) {
       return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
     }
 
-    // Delete related records first (messages, offers, etc.)
-    await prisma.message.deleteMany({
-      where: { sender_id: parseInt(id) }
+    // Soft delete - just deactivate the user
+    await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isActive: false }
     });
 
-    await prisma.offer.deleteMany({
-      where: { deliverer_id: parseInt(id) }
-    });
-
-    // Delete user
-    await prisma.users.delete({
-      where: { user_id: parseInt(id) }
-    });
-
-    res.json({ status: 'sukses', message: 'Pengguna berhasil dihapus' });
+    res.json({ status: 'success', message: 'Pengguna berhasil dinonaktifkan' });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Gagal menghapus pengguna' });
@@ -387,10 +429,13 @@ exports.toggleUserStatus = async (req, res) => {
     const { id } = req.params;
     const { isActive } = req.body;
 
-    // For now, we'll just return success as we don't have an isActive field
-    // You can add this field to the schema if needed
+    await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isActive: isActive }
+    });
+
     res.json({ 
-      status: 'sukses', 
+      status: 'success', 
       message: `Status pengguna berhasil ${isActive ? 'diaktifkan' : 'dinonaktifkan'}` 
     });
   } catch (error) {
@@ -410,56 +455,71 @@ exports.getAllDeliverers = async (req, res) => {
       role: 'DELIVERER',
       AND: search ? {
         OR: [
-          { nama: { contains: search, mode: 'insensitive' } },
+          { fullName: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } }
         ]
       } : {}
     };
 
     const [deliverers, total] = await Promise.all([
-      prisma.users.findMany({
+      prisma.user.findMany({
         where: whereClause,
         skip,
         take: parseInt(limit),
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         select: {
-          user_id: true,
+          id: true,
           email: true,
-          nama: true,
-          no_hp: true,
-          alamat: true,
-          foto_profil: true,
-          created_at: true,
+          fullName: true,
+          phone: true,
+          profilePicture: true,
+          isActive: true,
+          createdAt: true,
+          driverProfile: {
+            select: {
+              id: true,
+              vehicleType: true,
+              plateNumber: true,
+              status: true
+            }
+          },
           _count: {
             select: {
-              deliveredOrders: true
+              driverOrders: true
             }
           }
         }
       }),
-      prisma.users.count({ where: whereClause })
+      prisma.user.count({ where: whereClause })
     ]);
 
     // Get earnings for each deliverer
     const deliverersWithEarnings = await Promise.all(
       deliverers.map(async (d) => {
-        const earnings = await prisma.orders.aggregate({
-          _sum: { final_fee: true },
+        const earnings = await prisma.order.aggregate({
+          _sum: { driverEarnings: true },
           where: {
-            deliverer_id: d.user_id,
-            status: 'COMPLETED',
-            final_fee: { not: null }
+            driverId: d.id,
+            status: 'COMPLETED'
           }
         });
         return {
-          ...d,
-          totalEarnings: earnings._sum.final_fee || 0
+          user_id: d.id,
+          email: d.email,
+          nama: d.fullName,
+          no_hp: d.phone,
+          foto_profil: d.profilePicture,
+          isActive: d.isActive,
+          created_at: d.createdAt,
+          driverProfile: d.driverProfile,
+          totalDeliveries: d._count.driverOrders,
+          totalEarnings: earnings._sum.driverEarnings || 0
         };
       })
     );
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: deliverersWithEarnings,
       pagination: {
         page: parseInt(page),
@@ -476,14 +536,14 @@ exports.getAllDeliverers = async (req, res) => {
 
 exports.registerDeliverer = async (req, res) => {
   try {
-    const { email, password, nama, no_hp, alamat } = req.body;
+    const { email, password, nama, no_hp } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email dan password wajib diisi' });
     }
 
     // Check if email exists
-    const existing = await prisma.users.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { email }
     });
 
@@ -493,30 +553,35 @@ exports.registerDeliverer = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newDeliverer = await prisma.users.create({
+    const newDeliverer = await prisma.user.create({
       data: {
         email,
-        password_hash: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'DELIVERER',
-        nama,
-        no_hp,
-        alamat
+        fullName: nama,
+        phone: no_hp
       },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        no_hp: true,
-        alamat: true,
+        fullName: true,
+        phone: true,
         role: true,
-        created_at: true
+        createdAt: true
       }
     });
 
     res.status(201).json({
-      status: 'sukses',
+      status: 'success',
       message: 'Kurir berhasil didaftarkan',
-      data: newDeliverer
+      data: {
+        user_id: newDeliverer.id,
+        email: newDeliverer.email,
+        nama: newDeliverer.fullName,
+        no_hp: newDeliverer.phone,
+        role: newDeliverer.role,
+        created_at: newDeliverer.createdAt
+      }
     });
   } catch (error) {
     console.error('Register deliverer error:', error);
@@ -528,26 +593,27 @@ exports.getDelivererById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deliverer = await prisma.users.findFirst({
+    const deliverer = await prisma.user.findFirst({
       where: {
-        user_id: parseInt(id),
+        id: parseInt(id),
         role: 'DELIVERER'
       },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        tgl_lahir: true,
-        no_hp: true,
-        alamat: true,
-        foto_profil: true,
-        created_at: true,
-        deliveredOrders: {
+        fullName: true,
+        dateOfBirth: true,
+        phone: true,
+        profilePicture: true,
+        isActive: true,
+        createdAt: true,
+        driverProfile: true,
+        driverOrders: {
           take: 20,
-          orderBy: { created_at: 'desc' },
+          orderBy: { createdAt: 'desc' },
           include: {
-            user: {
-              select: { nama: true, email: true }
+            customer: {
+              select: { fullName: true, email: true }
             }
           }
         }
@@ -559,23 +625,31 @@ exports.getDelivererById = async (req, res) => {
     }
 
     // Get earnings
-    const earnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const earnings = await prisma.order.aggregate({
+      _sum: { driverEarnings: true },
       _count: true,
       where: {
-        deliverer_id: parseInt(id),
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        driverId: parseInt(id),
+        status: 'COMPLETED'
       }
     });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
-        ...deliverer,
+        user_id: deliverer.id,
+        email: deliverer.email,
+        nama: deliverer.fullName,
+        tgl_lahir: deliverer.dateOfBirth,
+        no_hp: deliverer.phone,
+        foto_profil: deliverer.profilePicture,
+        isActive: deliverer.isActive,
+        created_at: deliverer.createdAt,
+        driverProfile: deliverer.driverProfile,
+        deliveredOrders: deliverer.driverOrders,
         stats: {
           totalDeliveries: earnings._count,
-          totalEarnings: earnings._sum.final_fee || 0
+          totalEarnings: earnings._sum.driverEarnings || 0
         }
       }
     });
@@ -588,28 +662,40 @@ exports.getDelivererById = async (req, res) => {
 exports.updateDeliverer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama, no_hp, alamat, tgl_lahir } = req.body;
+    const { nama, no_hp, tgl_lahir, isActive } = req.body;
 
-    const updatedDeliverer = await prisma.users.update({
-      where: { user_id: parseInt(id) },
+    const updatedDeliverer = await prisma.user.update({
+      where: { id: parseInt(id) },
       data: {
-        nama,
-        no_hp,
-        alamat,
-        tgl_lahir: tgl_lahir ? new Date(tgl_lahir) : undefined
+        fullName: nama,
+        phone: no_hp,
+        dateOfBirth: tgl_lahir ? new Date(tgl_lahir) : undefined,
+        isActive: isActive
       },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        no_hp: true,
-        alamat: true,
+        fullName: true,
+        phone: true,
         role: true,
-        created_at: true
+        isActive: true,
+        createdAt: true
       }
     });
 
-    res.json({ status: 'sukses', message: 'Data kurir berhasil diperbarui', data: updatedDeliverer });
+    res.json({ 
+      status: 'success', 
+      message: 'Data kurir berhasil diperbarui', 
+      data: {
+        user_id: updatedDeliverer.id,
+        email: updatedDeliverer.email,
+        nama: updatedDeliverer.fullName,
+        no_hp: updatedDeliverer.phone,
+        role: updatedDeliverer.role,
+        isActive: updatedDeliverer.isActive,
+        created_at: updatedDeliverer.createdAt
+      }
+    });
   } catch (error) {
     console.error('Update deliverer error:', error);
     res.status(500).json({ error: 'Gagal memperbarui data kurir' });
@@ -620,9 +706,9 @@ exports.deleteDeliverer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deliverer = await prisma.users.findFirst({
+    const deliverer = await prisma.user.findFirst({
       where: {
-        user_id: parseInt(id),
+        id: parseInt(id),
         role: 'DELIVERER'
       }
     });
@@ -631,20 +717,13 @@ exports.deleteDeliverer = async (req, res) => {
       return res.status(404).json({ error: 'Kurir tidak ditemukan' });
     }
 
-    // Delete related records
-    await prisma.message.deleteMany({
-      where: { sender_id: parseInt(id) }
+    // Soft delete - deactivate the user
+    await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { isActive: false }
     });
 
-    await prisma.offer.deleteMany({
-      where: { deliverer_id: parseInt(id) }
-    });
-
-    await prisma.users.delete({
-      where: { user_id: parseInt(id) }
-    });
-
-    res.json({ status: 'sukses', message: 'Kurir berhasil dihapus' });
+    res.json({ status: 'success', message: 'Kurir berhasil dinonaktifkan' });
   } catch (error) {
     console.error('Delete deliverer error:', error);
     res.status(500).json({ error: 'Gagal menghapus kurir' });
@@ -655,26 +734,25 @@ exports.getDelivererStats = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const completedOrders = await prisma.orders.count({
+    const completedOrders = await prisma.order.count({
       where: {
-        deliverer_id: parseInt(id),
+        driverId: parseInt(id),
         status: 'COMPLETED'
       }
     });
 
-    const activeOrders = await prisma.orders.count({
+    const activeOrders = await prisma.order.count({
       where: {
-        deliverer_id: parseInt(id),
-        status: { in: ['OFFER_ACCEPTED', 'ON_DELIVERY'] }
+        driverId: parseInt(id),
+        status: { in: ['DRIVER_ASSIGNED', 'PICKED_UP', 'ON_DELIVERY'] }
       }
     });
 
-    const earnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const earnings = await prisma.order.aggregate({
+      _sum: { driverEarnings: true },
       where: {
-        deliverer_id: parseInt(id),
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        driverId: parseInt(id),
+        status: 'COMPLETED'
       }
     });
 
@@ -683,33 +761,32 @@ exports.getDelivererStats = async (req, res) => {
     thisMonth.setDate(1);
     thisMonth.setHours(0, 0, 0, 0);
 
-    const monthlyOrders = await prisma.orders.count({
+    const monthlyOrders = await prisma.order.count({
       where: {
-        deliverer_id: parseInt(id),
+        driverId: parseInt(id),
         status: 'COMPLETED',
-        created_at: { gte: thisMonth }
+        createdAt: { gte: thisMonth }
       }
     });
 
-    const monthlyEarnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const monthlyEarnings = await prisma.order.aggregate({
+      _sum: { driverEarnings: true },
       where: {
-        deliverer_id: parseInt(id),
+        driverId: parseInt(id),
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: thisMonth }
+        createdAt: { gte: thisMonth }
       }
     });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         completedOrders,
         activeOrders,
-        totalEarnings: earnings._sum.final_fee || 0,
+        totalEarnings: earnings._sum.driverEarnings || 0,
         thisMonth: {
           orders: monthlyOrders,
-          earnings: monthlyEarnings._sum.final_fee || 0
+          earnings: monthlyEarnings._sum.driverEarnings || 0
         }
       }
     });
@@ -746,37 +823,43 @@ exports.getAllOrders = async (req, res) => {
         status ? { status: status } : {},
         search ? {
           OR: [
-            { item_id: { contains: search, mode: 'insensitive' } },
-            { destination: { contains: search, mode: 'insensitive' } }
+            { orderNumber: { contains: search, mode: 'insensitive' } },
+            { deliveryAddress: { contains: search, mode: 'insensitive' } }
           ]
         } : {}
       ]
     };
 
     const [orders, total] = await Promise.all([
-      prisma.orders.findMany({
+      prisma.order.findMany({
         where: whereClause,
         skip,
         take: parseInt(limit),
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
-          user: {
-            select: { nama: true, email: true, no_hp: true }
+          customer: {
+            select: { fullName: true, email: true, phone: true }
           },
-          deliverer: {
-            select: { nama: true, email: true, no_hp: true }
-          },
-          _count: {
-            select: { offers: true }
+          driver: {
+            select: { fullName: true, email: true, phone: true }
           }
         }
       }),
-      prisma.orders.count({ where: whereClause })
+      prisma.order.count({ where: whereClause })
     ]);
 
     res.json({
-      status: 'sukses',
-      data: orders,
+      status: 'success',
+      data: orders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        deliveryAddress: order.deliveryAddress,
+        createdAt: order.createdAt,
+        user: order.customer ? { nama: order.customer.fullName, email: order.customer.email, no_hp: order.customer.phone } : null,
+        deliverer: order.driver ? { nama: order.driver.fullName, email: order.driver.email, no_hp: order.driver.phone } : null
+      })),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -794,30 +877,22 @@ exports.getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const order = await prisma.orders.findUnique({
+    const order = await prisma.order.findUnique({
       where: { id: parseInt(id) },
       include: {
-        user: {
-          select: { user_id: true, nama: true, email: true, no_hp: true, alamat: true }
+        customer: {
+          select: { id: true, fullName: true, email: true, phone: true }
         },
-        deliverer: {
-          select: { user_id: true, nama: true, email: true, no_hp: true }
+        driver: {
+          select: { id: true, fullName: true, email: true, phone: true }
         },
-        offers: {
+        items: {
           include: {
-            deliverer: {
-              select: { nama: true, email: true }
-            }
+            menuItem: true
           }
         },
-        messages: {
-          take: 50,
-          orderBy: { created_at: 'asc' },
-          include: {
-            sender: {
-              select: { nama: true }
-            }
-          }
+        merchant: {
+          select: { id: true, businessName: true, phone: true }
         }
       }
     });
@@ -826,7 +901,7 @@ exports.getOrderById = async (req, res) => {
       return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
     }
 
-    res.json({ status: 'sukses', data: order });
+    res.json({ status: 'success', data: order });
   } catch (error) {
     console.error('Get order by ID error:', error);
     res.status(500).json({ error: 'Gagal mengambil detail pesanan' });
@@ -838,17 +913,17 @@ exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['WAITING_FOR_OFFERS', 'OFFER_ACCEPTED', 'ON_DELIVERY', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP', 'DRIVER_ASSIGNED', 'PICKED_UP', 'ON_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Status tidak valid' });
     }
 
-    const updatedOrder = await prisma.orders.update({
+    const updatedOrder = await prisma.order.update({
       where: { id: parseInt(id) },
       data: { status }
     });
 
-    res.json({ status: 'sukses', message: 'Status pesanan berhasil diperbarui', data: updatedOrder });
+    res.json({ status: 'success', message: 'Status pesanan berhasil diperbarui', data: updatedOrder });
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ error: 'Gagal memperbarui status pesanan' });
@@ -862,22 +937,26 @@ exports.getOrdersByStatus = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const [orders, total] = await Promise.all([
-      prisma.orders.findMany({
+      prisma.order.findMany({
         where: { status },
         skip,
         take: parseInt(limit),
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { nama: true, email: true } },
-          deliverer: { select: { nama: true, email: true } }
+          customer: { select: { fullName: true, email: true } },
+          driver: { select: { fullName: true, email: true } }
         }
       }),
-      prisma.orders.count({ where: { status } })
+      prisma.order.count({ where: { status } })
     ]);
 
     res.json({
-      status: 'sukses',
-      data: orders,
+      status: 'success',
+      data: orders.map(order => ({
+        ...order,
+        user: order.customer ? { nama: order.customer.fullName, email: order.customer.email } : null,
+        deliverer: order.driver ? { nama: order.driver.fullName, email: order.driver.email } : null
+      })),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -896,38 +975,35 @@ exports.getOrdersByStatus = async (req, res) => {
 exports.getEarningsSummary = async (req, res) => {
   try {
     // Total earnings
-    const totalEarnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const totalEarnings = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
       _count: true,
       where: {
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        status: 'COMPLETED'
       }
     });
 
     // Today's earnings
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayEarnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const todayEarnings = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
       _count: true,
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: today }
+        createdAt: { gte: today }
       }
     });
 
     // This week's earnings
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekEarnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const weekEarnings = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
       _count: true,
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: weekAgo }
+        createdAt: { gte: weekAgo }
       }
     });
 
@@ -935,33 +1011,32 @@ exports.getEarningsSummary = async (req, res) => {
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-    const monthEarnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const monthEarnings = await prisma.order.aggregate({
+      _sum: { totalAmount: true },
       _count: true,
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: monthStart }
+        createdAt: { gte: monthStart }
       }
     });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         total: {
-          earnings: totalEarnings._sum.final_fee || 0,
+          earnings: totalEarnings._sum.totalAmount || 0,
           orders: totalEarnings._count
         },
         today: {
-          earnings: todayEarnings._sum.final_fee || 0,
+          earnings: todayEarnings._sum.totalAmount || 0,
           orders: todayEarnings._count
         },
         thisWeek: {
-          earnings: weekEarnings._sum.final_fee || 0,
+          earnings: weekEarnings._sum.totalAmount || 0,
           orders: weekEarnings._count
         },
         thisMonth: {
-          earnings: monthEarnings._sum.final_fee || 0,
+          earnings: monthEarnings._sum.totalAmount || 0,
           orders: monthEarnings._count
         }
       }
@@ -977,27 +1052,26 @@ exports.getDelivererEarnings = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const deliverers = await prisma.users.findMany({
+    const deliverers = await prisma.user.findMany({
       where: { role: 'DELIVERER' },
       skip,
       take: parseInt(limit),
       select: {
-        user_id: true,
-        nama: true,
+        id: true,
+        fullName: true,
         email: true,
-        foto_profil: true
+        profilePicture: true
       }
     });
 
     const deliverersWithEarnings = await Promise.all(
       deliverers.map(async (d) => {
-        const earnings = await prisma.orders.aggregate({
-          _sum: { final_fee: true },
+        const earnings = await prisma.order.aggregate({
+          _sum: { driverEarnings: true },
           _count: true,
           where: {
-            deliverer_id: d.user_id,
-            status: 'COMPLETED',
-            final_fee: { not: null }
+            driverId: d.id,
+            status: 'COMPLETED'
           }
         });
 
@@ -1005,22 +1079,24 @@ exports.getDelivererEarnings = async (req, res) => {
         thisMonth.setDate(1);
         thisMonth.setHours(0, 0, 0, 0);
 
-        const monthlyEarnings = await prisma.orders.aggregate({
-          _sum: { final_fee: true },
+        const monthlyEarnings = await prisma.order.aggregate({
+          _sum: { driverEarnings: true },
           _count: true,
           where: {
-            deliverer_id: d.user_id,
+            driverId: d.id,
             status: 'COMPLETED',
-            final_fee: { not: null },
-            created_at: { gte: thisMonth }
+            createdAt: { gte: thisMonth }
           }
         });
 
         return {
-          ...d,
-          totalEarnings: earnings._sum.final_fee || 0,
+          id: d.id,
+          nama: d.fullName,
+          email: d.email,
+          foto_profil: d.profilePicture,
+          totalEarnings: earnings._sum.driverEarnings || 0,
           totalDeliveries: earnings._count,
-          monthlyEarnings: monthlyEarnings._sum.final_fee || 0,
+          monthlyEarnings: monthlyEarnings._sum.driverEarnings || 0,
           monthlyDeliveries: monthlyEarnings._count
         };
       })
@@ -1029,10 +1105,10 @@ exports.getDelivererEarnings = async (req, res) => {
     // Sort by total earnings
     deliverersWithEarnings.sort((a, b) => b.totalEarnings - a.totalEarnings);
 
-    const total = await prisma.users.count({ where: { role: 'DELIVERER' } });
+    const total = await prisma.user.count({ where: { role: 'DELIVERER' } });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: deliverersWithEarnings,
       pagination: {
         page: parseInt(page),
@@ -1054,15 +1130,14 @@ exports.getDailyEarnings = async (req, res) => {
     startDate.setDate(startDate.getDate() - parseInt(days));
     startDate.setHours(0, 0, 0, 0);
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: startDate }
+        createdAt: { gte: startDate }
       },
       select: {
-        final_fee: true,
-        created_at: true
+        totalAmount: true,
+        createdAt: true
       }
     });
 
@@ -1076,9 +1151,9 @@ exports.getDailyEarnings = async (req, res) => {
     }
 
     orders.forEach(order => {
-      const dateStr = order.created_at.toISOString().split('T')[0];
+      const dateStr = order.createdAt.toISOString().split('T')[0];
       if (dailyData[dateStr]) {
-        dailyData[dateStr].earnings += order.final_fee || 0;
+        dailyData[dateStr].earnings += order.totalAmount || 0;
         dailyData[dateStr].orders += 1;
       }
     });
@@ -1087,7 +1162,7 @@ exports.getDailyEarnings = async (req, res) => {
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    res.json({ status: 'sukses', data: result });
+    res.json({ status: 'success', data: result });
   } catch (error) {
     console.error('Get daily earnings error:', error);
     res.status(500).json({ error: 'Gagal mengambil pendapatan harian' });
@@ -1102,15 +1177,14 @@ exports.getMonthlyEarnings = async (req, res) => {
     startDate.setDate(1);
     startDate.setHours(0, 0, 0, 0);
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        created_at: { gte: startDate }
+        createdAt: { gte: startDate }
       },
       select: {
-        final_fee: true,
-        created_at: true
+        totalAmount: true,
+        createdAt: true
       }
     });
 
@@ -1124,10 +1198,10 @@ exports.getMonthlyEarnings = async (req, res) => {
     }
 
     orders.forEach(order => {
-      const date = order.created_at;
+      const date = order.createdAt;
       const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       if (monthlyData[monthStr]) {
-        monthlyData[monthStr].earnings += order.final_fee || 0;
+        monthlyData[monthStr].earnings += order.totalAmount || 0;
         monthlyData[monthStr].orders += 1;
       }
     });
@@ -1136,7 +1210,7 @@ exports.getMonthlyEarnings = async (req, res) => {
       .map(([month, data]) => ({ month, ...data }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    res.json({ status: 'sukses', data: result });
+    res.json({ status: 'success', data: result });
   } catch (error) {
     console.error('Get monthly earnings error:', error);
     res.status(500).json({ error: 'Gagal mengambil pendapatan bulanan' });
@@ -1145,30 +1219,30 @@ exports.getMonthlyEarnings = async (req, res) => {
 
 exports.getUsersReport = async (req, res) => {
   try {
-    const totalUsers = await prisma.users.count({ where: { role: 'USER' } });
-    const totalDeliverers = await prisma.users.count({ where: { role: 'DELIVERER' } });
+    const totalUsers = await prisma.user.count({ where: { role: 'CUSTOMER' } });
+    const totalDeliverers = await prisma.user.count({ where: { role: 'DELIVERER' } });
 
     // New users this month
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
-    const newUsersThisMonth = await prisma.users.count({
+    const newUsersThisMonth = await prisma.user.count({
       where: {
-        created_at: { gte: monthStart },
-        role: 'USER'
+        createdAt: { gte: monthStart },
+        role: 'CUSTOMER'
       }
     });
 
-    const newDeliverersThisMonth = await prisma.users.count({
+    const newDeliverersThisMonth = await prisma.user.count({
       where: {
-        created_at: { gte: monthStart },
+        createdAt: { gte: monthStart },
         role: 'DELIVERER'
       }
     });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         users: {
           total: totalUsers,
@@ -1188,30 +1262,29 @@ exports.getUsersReport = async (req, res) => {
 
 exports.getOrdersReport = async (req, res) => {
   try {
-    const total = await prisma.orders.count();
-    const completed = await prisma.orders.count({ where: { status: 'COMPLETED' } });
-    const cancelled = await prisma.orders.count({ where: { status: 'CANCELLED' } });
-    const pending = await prisma.orders.count({
-      where: { status: { in: ['WAITING_FOR_OFFERS', 'OFFER_ACCEPTED', 'ON_DELIVERY'] } }
+    const total = await prisma.order.count();
+    const completed = await prisma.order.count({ where: { status: 'COMPLETED' } });
+    const cancelled = await prisma.order.count({ where: { status: 'CANCELLED' } });
+    const pending = await prisma.order.count({
+      where: { status: { in: ['PENDING', 'CONFIRMED', 'PREPARING', 'ON_DELIVERY'] } }
     });
 
-    const averageFee = await prisma.orders.aggregate({
-      _avg: { final_fee: true },
+    const averageFee = await prisma.order.aggregate({
+      _avg: { totalAmount: true },
       where: {
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        status: 'COMPLETED'
       }
     });
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         total,
         completed,
         cancelled,
         pending,
         completionRate: total > 0 ? ((completed / total) * 100).toFixed(2) : 0,
-        averageFee: averageFee._avg.final_fee || 0
+        averageFee: averageFee._avg.totalAmount || 0
       }
     });
   } catch (error) {
@@ -1226,36 +1299,32 @@ exports.getTopDeliverers = async (req, res) => {
   try {
     const { limit = 5 } = req.query;
 
-    // Get all deliverers with their completed orders count and earnings
-    const deliverers = await prisma.users.findMany({
+    // Get all deliverers
+    const deliverers = await prisma.user.findMany({
       where: { role: 'DELIVERER' },
       select: {
-        user_id: true,
-        nama: true,
+        id: true,
+        fullName: true,
         email: true,
-        foto_profil: true,
-        _count: {
-          select: { deliveredOrders: true }
-        }
+        profilePicture: true
       }
     });
 
     // Calculate stats for each deliverer
     const deliverersWithStats = await Promise.all(
       deliverers.map(async (d) => {
-        const completedOrders = await prisma.orders.count({
+        const completedOrders = await prisma.order.count({
           where: {
-            deliverer_id: d.user_id,
+            driverId: d.id,
             status: 'COMPLETED'
           }
         });
 
-        const earnings = await prisma.orders.aggregate({
-          _sum: { final_fee: true },
+        const earnings = await prisma.order.aggregate({
+          _sum: { driverEarnings: true },
           where: {
-            deliverer_id: d.user_id,
-            status: 'COMPLETED',
-            final_fee: { not: null }
+            driverId: d.id,
+            status: 'COMPLETED'
           }
         });
 
@@ -1265,13 +1334,13 @@ exports.getTopDeliverers = async (req, res) => {
         const rating = Math.round((baseRating + bonusRating) * 10) / 10;
 
         return {
-          id: d.user_id,
-          name: d.nama || d.email.split('@')[0],
+          id: d.id,
+          name: d.fullName || d.email.split('@')[0],
           email: d.email,
-          avatar: d.foto_profil,
+          avatar: d.profilePicture,
           orders: completedOrders,
           rating: Math.min(rating, 5.0),
-          earnings: earnings._sum.final_fee || 0
+          earnings: earnings._sum.driverEarnings || 0
         };
       })
     );
@@ -1282,7 +1351,7 @@ exports.getTopDeliverers = async (req, res) => {
       .slice(0, parseInt(limit));
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: topDeliverers
     });
   } catch (error) {
@@ -1296,7 +1365,7 @@ exports.getTopDeliverers = async (req, res) => {
 exports.getDeliverersOverview = async (req, res) => {
   try {
     // Total deliverers
-    const totalDeliverers = await prisma.users.count({
+    const totalDeliverers = await prisma.user.count({
       where: { role: 'DELIVERER' }
     });
 
@@ -1304,29 +1373,28 @@ exports.getDeliverersOverview = async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const activeDelivererIds = await prisma.orders.findMany({
+    const activeDelivererIds = await prisma.order.findMany({
       where: {
-        deliverer_id: { not: null },
-        created_at: { gte: thirtyDaysAgo }
+        driverId: { not: null },
+        createdAt: { gte: thirtyDaysAgo }
       },
-      select: { deliverer_id: true },
-      distinct: ['deliverer_id']
+      select: { driverId: true },
+      distinct: ['driverId']
     });
 
     const activeDeliverers = activeDelivererIds.length;
 
     // Total completed orders by all deliverers
-    const totalCompletedOrders = await prisma.orders.count({
-      where: { status: 'COMPLETED', deliverer_id: { not: null } }
+    const totalCompletedOrders = await prisma.order.count({
+      where: { status: 'COMPLETED', driverId: { not: null } }
     });
 
     // Total revenue from all deliverers
-    const totalRevenue = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const totalRevenue = await prisma.order.aggregate({
+      _sum: { driverEarnings: true },
       where: {
         status: 'COMPLETED',
-        final_fee: { not: null },
-        deliverer_id: { not: null }
+        driverId: { not: null }
       }
     });
 
@@ -1336,22 +1404,22 @@ exports.getDeliverersOverview = async (req, res) => {
       : 0;
 
     // Average satisfaction (based on completion rate)
-    const totalOrders = await prisma.orders.count({
-      where: { deliverer_id: { not: null } }
+    const totalOrders = await prisma.order.count({
+      where: { driverId: { not: null } }
     });
     const avgSatisfaction = totalOrders > 0 
       ? Math.round((totalCompletedOrders / totalOrders) * 100)
       : 0;
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         totalDeliverers,
         activeDeliverers,
         pendingApproval: 0, // We don't have pending approval status in current schema
         avgRating: Math.round(avgRating * 10) / 10,
         avgSatisfaction,
-        totalRevenue: totalRevenue._sum.final_fee || 0,
+        totalRevenue: totalRevenue._sum.driverEarnings || 0,
         totalCompletedOrders
       }
     });
@@ -1368,9 +1436,9 @@ exports.getDelivererPerformance = async (req, res) => {
     const { id } = req.params;
 
     // Get deliverer info
-    const deliverer = await prisma.users.findFirst({
-      where: { user_id: parseInt(id), role: 'DELIVERER' },
-      select: { user_id: true, nama: true, email: true, created_at: true }
+    const deliverer = await prisma.user.findFirst({
+      where: { id: parseInt(id), role: 'DELIVERER' },
+      select: { id: true, fullName: true, email: true, createdAt: true }
     });
 
     if (!deliverer) {
@@ -1378,22 +1446,21 @@ exports.getDelivererPerformance = async (req, res) => {
     }
 
     // Completed orders
-    const completedOrders = await prisma.orders.count({
-      where: { deliverer_id: parseInt(id), status: 'COMPLETED' }
+    const completedOrders = await prisma.order.count({
+      where: { driverId: parseInt(id), status: 'COMPLETED' }
     });
 
     // Total orders assigned
-    const totalAssigned = await prisma.orders.count({
-      where: { deliverer_id: parseInt(id) }
+    const totalAssigned = await prisma.order.count({
+      where: { driverId: parseInt(id) }
     });
 
     // Earnings
-    const earnings = await prisma.orders.aggregate({
-      _sum: { final_fee: true },
+    const earnings = await prisma.order.aggregate({
+      _sum: { driverEarnings: true },
       where: {
-        deliverer_id: parseInt(id),
-        status: 'COMPLETED',
-        final_fee: { not: null }
+        driverId: parseInt(id),
+        status: 'COMPLETED'
       }
     });
 
@@ -1419,11 +1486,11 @@ exports.getDelivererPerformance = async (req, res) => {
     if (rebookRate >= 80) badges.push('customer-favorite');
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: {
         delivererId: parseInt(id),
         completedOrders,
-        revenue: earnings._sum.final_fee || 0,
+        revenue: earnings._sum.driverEarnings || 0,
         onTime: onTimeRate,
         responseTime,
         satisfaction,
@@ -1444,27 +1511,27 @@ exports.getNotifications = async (req, res) => {
     const { limit = 10 } = req.query;
 
     // Get recent orders (new orders)
-    const recentOrders = await prisma.orders.findMany({
+    const recentOrders = await prisma.order.findMany({
       take: 5,
-      orderBy: { created_at: 'desc' },
-      where: { status: 'WAITING_FOR_OFFERS' },
-      select: { id: true, created_at: true, user: { select: { nama: true } } }
+      orderBy: { createdAt: 'desc' },
+      where: { status: 'PENDING' },
+      select: { id: true, orderNumber: true, createdAt: true, customer: { select: { fullName: true } } }
     });
 
     // Get new deliverer registrations (users with DELIVERER role created recently)
-    const newDeliverers = await prisma.users.findMany({
+    const newDeliverers = await prisma.user.findMany({
       take: 5,
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
       where: { role: 'DELIVERER' },
-      select: { user_id: true, nama: true, email: true, created_at: true }
+      select: { id: true, fullName: true, email: true, createdAt: true }
     });
 
     // Get completed orders (successful payments)
-    const completedOrders = await prisma.orders.findMany({
+    const completedOrders = await prisma.order.findMany({
       take: 5,
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
       where: { status: 'COMPLETED' },
-      select: { id: true, final_fee: true, created_at: true }
+      select: { id: true, orderNumber: true, totalAmount: true, createdAt: true }
     });
 
     // Format notifications
@@ -1472,43 +1539,43 @@ exports.getNotifications = async (req, res) => {
 
     // Add order notifications
     recentOrders.forEach(order => {
-      const timeDiff = getTimeDifference(order.created_at);
+      const timeDiff = getTimeDifference(order.createdAt);
       notifications.push({
         id: `order-${order.id}`,
         type: 'order',
-        title: `Pesanan baru #${order.id}`,
-        message: `Pesanan dari ${order.user?.nama || 'Pelanggan'}`,
+        title: `Pesanan baru ${order.orderNumber}`,
+        message: `Pesanan dari ${order.customer?.fullName || 'Pelanggan'}`,
         time: timeDiff,
-        unread: isWithinHours(order.created_at, 1),
-        createdAt: order.created_at
+        unread: isWithinHours(order.createdAt, 1),
+        createdAt: order.createdAt
       });
     });
 
     // Add deliverer notifications
     newDeliverers.forEach(deliverer => {
-      const timeDiff = getTimeDifference(deliverer.created_at);
+      const timeDiff = getTimeDifference(deliverer.createdAt);
       notifications.push({
-        id: `deliverer-${deliverer.user_id}`,
+        id: `deliverer-${deliverer.id}`,
         type: 'deliverer',
         title: 'Deliverer baru mendaftar',
-        message: deliverer.nama || deliverer.email,
+        message: deliverer.fullName || deliverer.email,
         time: timeDiff,
-        unread: isWithinHours(deliverer.created_at, 24),
-        createdAt: deliverer.created_at
+        unread: isWithinHours(deliverer.createdAt, 24),
+        createdAt: deliverer.createdAt
       });
     });
 
     // Add payment notifications
     completedOrders.forEach(order => {
-      const timeDiff = getTimeDifference(order.created_at);
+      const timeDiff = getTimeDifference(order.createdAt);
       notifications.push({
         id: `payment-${order.id}`,
         type: 'payment',
         title: 'Pembayaran berhasil',
-        message: `Pesanan #${order.id} - Rp ${(order.final_fee || 0).toLocaleString()}`,
+        message: `Pesanan ${order.orderNumber} - Rp ${(order.totalAmount || 0).toLocaleString()}`,
         time: timeDiff,
-        unread: isWithinHours(order.created_at, 2),
-        createdAt: order.created_at
+        unread: isWithinHours(order.createdAt, 2),
+        createdAt: order.createdAt
       });
     });
 
@@ -1517,7 +1584,7 @@ exports.getNotifications = async (req, res) => {
     const limitedNotifications = notifications.slice(0, parseInt(limit));
 
     res.json({
-      status: 'sukses',
+      status: 'success',
       data: limitedNotifications,
       unreadCount: limitedNotifications.filter(n => n.unread).length
     });
@@ -1551,34 +1618,34 @@ function isWithinHours(date, hours) {
 
 exports.exportUsersReport = async (req, res) => {
   try {
-    const users = await prisma.users.findMany({
-      where: { role: { in: ['USER', 'DELIVERER'] } },
+    const users = await prisma.user.findMany({
+      where: { role: { in: ['CUSTOMER', 'DELIVERER'] } },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        no_hp: true,
+        fullName: true,
+        phone: true,
         role: true,
-        created_at: true,
+        createdAt: true,
         _count: {
-          select: { orders: true, deliveredOrders: true }
+          select: { customerOrders: true, driverOrders: true }
         }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
 
     const csvData = users.map(u => ({
-      ID: u.user_id,
+      ID: u.id,
       Email: u.email,
-      Nama: u.nama || '-',
-      'No HP': u.no_hp || '-',
+      Nama: u.fullName || '-',
+      'No HP': u.phone || '-',
       Role: u.role,
-      'Total Orders': u._count.orders,
-      'Delivered Orders': u._count.deliveredOrders,
-      'Tanggal Daftar': u.created_at?.toISOString().split('T')[0] || '-'
+      'Total Orders': u._count.customerOrders,
+      'Delivered Orders': u._count.driverOrders,
+      'Tanggal Daftar': u.createdAt?.toISOString().split('T')[0] || '-'
     }));
 
-    res.json({ status: 'sukses', data: csvData });
+    res.json({ status: 'success', data: csvData });
   } catch (error) {
     console.error('Export users report error:', error);
     res.status(500).json({ error: 'Gagal export laporan pengguna' });
@@ -1591,34 +1658,33 @@ exports.exportOrdersReport = async (req, res) => {
     
     const whereClause = {};
     if (startDate && endDate) {
-      whereClause.created_at = {
+      whereClause.createdAt = {
         gte: new Date(startDate),
         lte: new Date(endDate)
       };
     }
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: whereClause,
       include: {
-        user: { select: { nama: true, email: true } },
-        deliverer: { select: { nama: true, email: true } }
+        customer: { select: { fullName: true, email: true } },
+        driver: { select: { fullName: true, email: true } }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
 
     const csvData = orders.map(o => ({
       'Order ID': o.id,
-      'Item': o.item_id,
-      'Quantity': o.quantity,
-      'Destination': o.destination,
+      'Order Number': o.orderNumber,
+      'Destination': o.deliveryAddress,
       'Status': o.status,
-      'Fee': o.final_fee || 0,
-      'Customer': o.user?.nama || o.user?.email || '-',
-      'Deliverer': o.deliverer?.nama || o.deliverer?.email || '-',
-      'Tanggal': o.created_at?.toISOString().split('T')[0] || '-'
+      'Total Amount': o.totalAmount || 0,
+      'Customer': o.customer?.fullName || o.customer?.email || '-',
+      'Driver': o.driver?.fullName || o.driver?.email || '-',
+      'Tanggal': o.createdAt?.toISOString().split('T')[0] || '-'
     }));
 
-    res.json({ status: 'sukses', data: csvData });
+    res.json({ status: 'success', data: csvData });
   } catch (error) {
     console.error('Export orders report error:', error);
     res.status(500).json({ error: 'Gagal export laporan pesanan' });
@@ -1627,39 +1693,39 @@ exports.exportOrdersReport = async (req, res) => {
 
 exports.exportDeliverersReport = async (req, res) => {
   try {
-    const deliverers = await prisma.users.findMany({
+    const deliverers = await prisma.user.findMany({
       where: { role: 'DELIVERER' },
       select: {
-        user_id: true,
+        id: true,
         email: true,
-        nama: true,
-        no_hp: true,
-        created_at: true
+        fullName: true,
+        phone: true,
+        createdAt: true
       }
     });
 
     const deliverersWithStats = await Promise.all(
       deliverers.map(async (d) => {
-        const completedOrders = await prisma.orders.count({
-          where: { deliverer_id: d.user_id, status: 'COMPLETED' }
+        const completedOrders = await prisma.order.count({
+          where: { driverId: d.id, status: 'COMPLETED' }
         });
-        const earnings = await prisma.orders.aggregate({
-          _sum: { final_fee: true },
-          where: { deliverer_id: d.user_id, status: 'COMPLETED', final_fee: { not: null } }
+        const earnings = await prisma.order.aggregate({
+          _sum: { driverEarnings: true },
+          where: { driverId: d.id, status: 'COMPLETED' }
         });
         return {
-          ID: d.user_id,
+          ID: d.id,
           Email: d.email,
-          Nama: d.nama || '-',
-          'No HP': d.no_hp || '-',
+          Nama: d.fullName || '-',
+          'No HP': d.phone || '-',
           'Total Deliveries': completedOrders,
-          'Total Earnings': earnings._sum.final_fee || 0,
-          'Tanggal Daftar': d.created_at?.toISOString().split('T')[0] || '-'
+          'Total Earnings': earnings._sum.driverEarnings || 0,
+          'Tanggal Daftar': d.createdAt?.toISOString().split('T')[0] || '-'
         };
       })
     );
 
-    res.json({ status: 'sukses', data: deliverersWithStats });
+    res.json({ status: 'success', data: deliverersWithStats });
   } catch (error) {
     console.error('Export deliverers report error:', error);
     res.status(500).json({ error: 'Gagal export laporan deliverer' });
