@@ -63,28 +63,12 @@ router.patch(
 
 // ==================== DRIVER WALLET ROUTES ====================
 
-// Get my wallet (driver)
-router.get(
-  '/wallet/my',
-  authenticate,
-  authorize('DELIVERER'),
-  financialController.getMyWallet
-);
-
 // Get driver wallet (admin)
 router.get(
   '/wallet/driver/:userId',
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF'),
   financialController.getDriverWallet
-);
-
-// Request withdrawal (driver)
-router.post(
-  '/wallet/withdraw',
-  authenticate,
-  authorize('DELIVERER'),
-  financialController.requestWithdrawal
 );
 
 // Process driver withdrawal
@@ -105,13 +89,6 @@ router.post(
   financialController.topUpDriverWallet
 );
 
-// Get wallet transactions
-router.get(
-  '/wallet/transactions',
-  authenticate,
-  financialController.getWalletTransactions
-);
-
 // ==================== REFUND ROUTES ====================
 
 // Get all refunds (admin)
@@ -120,14 +97,6 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF', 'CUSTOMER_SERVICE'),
   financialController.getAllRefunds
-);
-
-// Get refund by ID
-router.get(
-  '/refunds/:id',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF', 'CUSTOMER_SERVICE'),
-  financialController.getRefundById
 );
 
 // Create refund request
@@ -183,22 +152,6 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF'),
   financialController.getDailyRevenue
-);
-
-// Get merchant revenue report
-router.get(
-  '/reports/merchant-revenue',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF'),
-  financialController.getMerchantRevenueReport
-);
-
-// Export financial report
-router.get(
-  '/reports/export',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF'),
-  financialController.exportFinancialReport
 );
 
 module.exports = router;
