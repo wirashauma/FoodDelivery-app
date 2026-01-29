@@ -10,26 +10,16 @@ const { authorize, authorizePermission, auditLog } = require('../middleware/rbac
 
 // ==================== PUBLIC ROUTES ====================
 
-// Get active merchants (for consumers)
-router.get('/public', merchantController.getActiveMerchants);
+// Get active merchants (for consumers) - Uses getAllMerchants with isActive filter
+router.get('/public', async (req, res) => {
+  // Use getAllMerchants with active filter
+  req.query.status = 'VERIFIED';
+  req.query.isOpen = 'true';
+  return merchantController.getAllMerchants(req, res);
+});
 
-// Get merchant by ID (public view)
-router.get('/public/:id', merchantController.getMerchantPublicProfile);
-
-// ==================== MERCHANT SELF-MANAGEMENT ====================
-
-// Merchant profile management
-router.get('/profile', authenticate, authorize('MERCHANT'), merchantController.getMerchantProfile);
-router.put('/profile', authenticate, authorize('MERCHANT'), merchantController.updateMerchantProfile);
-
-// Merchant operational hours
-router.put('/profile/hours', authenticate, authorize('MERCHANT'), merchantController.updateOwnOperationalHours);
-
-// Toggle merchant availability
-router.patch('/profile/toggle-status', authenticate, authorize('MERCHANT'), merchantController.toggleOwnStatus);
-
-// Merchant document upload
-router.post('/profile/documents', authenticate, authorize('MERCHANT'), merchantController.uploadOwnDocument);
+// Get merchant by ID (public view) - Uses getMerchantById
+router.get('/public/:id', merchantController.getMerchantById);
 
 // ==================== ADMIN ROUTES ====================
 
