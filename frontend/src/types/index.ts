@@ -3,7 +3,7 @@ export interface User {
   username: string;
   email: string;
   phone_number: string | null;
-  role: 'USER' | 'DELIVERER' | 'ADMIN';
+  role: 'CUSTOMER' | 'DELIVERER' | 'ADMIN' | 'MERCHANT' | 'SUPER_ADMIN' | 'OPERATIONS_STAFF' | 'FINANCE_STAFF' | 'CUSTOMER_SERVICE';
   created_at: string;
   updated_at: string;
 }
