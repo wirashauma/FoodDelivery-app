@@ -101,6 +101,22 @@ router.get(
   driverController.getOrderHistory
 );
 
+// ==================== VERIFICATION STATUS ====================
+
+// Get verification status
+router.get(
+  '/verification-status',
+  authenticate,
+  driverController.getVerificationStatus
+);
+
+// Upload face verification
+router.post(
+  '/face-verification',
+  authenticate,
+  driverController.uploadFaceVerification
+);
+
 // ==================== PERFORMANCE & STATS ====================
 
 // Get my performance stats
