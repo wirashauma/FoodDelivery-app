@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:jwt_decoder/jwt_decoder.dart'; // [MODIFIKASI]: Import decoder
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:titipin_app/features/auth/screens/welcome_screen.dart';
 import 'package:titipin_app/features/home/screens/main_screen.dart';
-// [MODIFIKASI]: Import halaman deliverer
 import 'package:titipin_app/features/deliverer/screens/deliverer_main_screen.dart';
+import 'package:titipin_app/features/deliverer/onboarding/deliverer_onboarding_screen.dart';
+import 'package:titipin_app/features/deliverer/onboarding/deliverer_registration_screen.dart';
+import 'package:titipin_app/features/deliverer/onboarding/document_scan_screen.dart';
+import 'package:titipin_app/features/deliverer/onboarding/face_verification_screen.dart';
+import 'package:titipin_app/features/deliverer/services/verification_service.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -15,72 +19,123 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   final _storage = const FlutterSecureStorage();
-  // [MODIFIKASI]: Future ini sekarang akan mengembalikan Role (String)
-  Future<String?>? _checkTokenAndRoleFuture;
+  final _verificationService = DelivererVerificationService();
+  Future<AuthResult>? _authFuture;
 
   @override
   void initState() {
     super.initState();
-    // [MODIFIKASI]: Ganti nama fungsi yang dipanggil
-    _checkTokenAndRoleFuture = _checkTokenAndRole();
+    _authFuture = _checkAuthAndVerification();
   }
 
-  // [MODIFIKASI]: Fungsi ini sekarang membaca token DAN role di dalamnya
-  Future<String?> _checkTokenAndRole() async {
+  Future<AuthResult> _checkAuthAndVerification() async {
     try {
       final token = await _storage.read(key: 'accessToken');
 
-      // Jika tidak ada token, atau token sudah expired, anggap logout
+      // No token or expired
       if (token == null || JwtDecoder.isExpired(token)) {
-        await _storage.deleteAll(); // Bersihkan token lama jika ada
-        return null;
+        await _storage.deleteAll();
+        return AuthResult(status: AuthStatus.notAuthenticated);
       }
 
-      // Token ada dan valid, decode tokennya
+      // Decode token
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      final role =
+          decodedToken['user']['role']?.toString().toUpperCase() ?? 'USER';
 
-      // Ambil role dari payload
-      // Sesuai struktur payload: { "user": { "id": 1, "role": "USER" } }
-      final role = decodedToken['user']['role'];
+      // For regular users, go directly to main screen
+      if (role != 'DELIVERER') {
+        return AuthResult(status: AuthStatus.authenticatedUser);
+      }
 
-      return role; // Kembalikan 'USER' atau 'DELIVERER'
+      // For deliverers, check verification status
+      final verificationStatus =
+          await _verificationService.checkVerificationStatus();
+
+      if (verificationStatus.isFullyVerified) {
+        return AuthResult(status: AuthStatus.authenticatedDeliverer);
+      }
+
+      // Check which step deliverer needs to complete
+      switch (verificationStatus.currentStep) {
+        case 'registration':
+          // Check if first time (needs onboarding) or returning
+          final lastStep = await _verificationService.getLastVerificationStep();
+          if (lastStep == null) {
+            return AuthResult(status: AuthStatus.needsOnboarding);
+          }
+          return AuthResult(status: AuthStatus.needsRegistration);
+        case 'documents':
+          return AuthResult(status: AuthStatus.needsDocuments);
+        case 'face':
+          return AuthResult(status: AuthStatus.needsFaceVerification);
+        default:
+          return AuthResult(status: AuthStatus.authenticatedDeliverer);
+      }
     } catch (e) {
-      // Jika ada error (misal: token korup), anggap logout
-      debugPrint("Error baca/decode token: $e");
+      debugPrint("Error in auth check: $e");
       await _storage.deleteAll();
-      return null;
+      return AuthResult(status: AuthStatus.notAuthenticated);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      // [MODIFIKASI]: Tipe data diubah ke String?
-      future: _checkTokenAndRoleFuture, // [MODIFIKASI]: Ganti nama future
+    return FutureBuilder<AuthResult>(
+      future: _authFuture,
       builder: (context, snapshot) {
-        // 1. Selama proses pengecekan...
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
-              child: CircularProgressIndicator(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Memeriksa status akun...'),
+                ],
+              ),
             ),
           );
         }
 
-        // 2. Jika pengecekan selesai DAN ada data (role tidak null)
-        if (snapshot.hasData && snapshot.data != null) {
-          final String role = snapshot.data!;
+        final result =
+            snapshot.data ?? AuthResult(status: AuthStatus.notAuthenticated);
 
-          // Admin login via web, mobile hanya untuk USER dan DELIVERER
-          if (role.toUpperCase() == 'DELIVERER') {
-            return const DelivererMainScreen();
-          } else {
+        switch (result.status) {
+          case AuthStatus.authenticatedUser:
             return const MainScreen();
-          }
-        } else {
-          return const WelcomeScreen();
+          case AuthStatus.authenticatedDeliverer:
+            return const DelivererMainScreen();
+          case AuthStatus.needsOnboarding:
+            return const DelivererOnboardingScreen();
+          case AuthStatus.needsRegistration:
+            return const DelivererRegistrationScreen();
+          case AuthStatus.needsDocuments:
+            return const DocumentScanScreen();
+          case AuthStatus.needsFaceVerification:
+            return const FaceVerificationScreen();
+          case AuthStatus.notAuthenticated:
+            return const WelcomeScreen();
         }
       },
     );
   }
+}
+
+enum AuthStatus {
+  notAuthenticated,
+  authenticatedUser,
+  authenticatedDeliverer,
+  needsOnboarding,
+  needsRegistration,
+  needsDocuments,
+  needsFaceVerification,
+}
+
+class AuthResult {
+  final AuthStatus status;
+  final String? message;
+
+  AuthResult({required this.status, this.message});
 }
