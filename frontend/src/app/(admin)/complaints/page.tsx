@@ -22,7 +22,7 @@ import {
 // Types
 interface Complaint {
   id: number;
-  type: 'USER' | 'DELIVERER';
+  type: 'CUSTOMER' | 'DELIVERER';
   subject: string;
   message: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
@@ -58,7 +58,7 @@ export default function ComplaintsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [responseText, setResponseText] = useState('');
   const [sendingResponse, setSendingResponse] = useState(false);
-  const [filterType, setFilterType] = useState<'ALL' | 'USER' | 'DELIVERER'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'CUSTOMER' | 'DELIVERER'>('ALL');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
@@ -271,18 +271,18 @@ export default function ComplaintsPage() {
               className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm w-full sm:w-auto justify-between"
             >
               <Filter size={16} />
-              <span>{filterType === 'ALL' ? 'Semua Tipe' : filterType === 'USER' ? 'User' : 'Driver'}</span>
+              <span>{filterType === 'ALL' ? 'Semua Tipe' : filterType === 'CUSTOMER' ? 'Customer' : 'Driver'}</span>
               <ChevronDown size={16} />
             </button>
             {showTypeDropdown && (
               <div className="absolute top-full mt-1 left-0 right-0 sm:right-auto sm:w-40 bg-white border rounded-lg shadow-lg z-10">
-                {(['ALL', 'USER', 'DELIVERER'] as const).map(type => (
+                {(['ALL', 'CUSTOMER', 'DELIVERER'] as const).map(type => (
                   <button
                     key={type}
                     onClick={() => { setFilterType(type); setShowTypeDropdown(false); }}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                   >
-                    {type === 'ALL' ? 'Semua Tipe' : type === 'USER' ? 'User' : 'Driver'}
+                    {type === 'ALL' ? 'Semua Tipe' : type === 'CUSTOMER' ? 'Customer' : 'Driver'}
                   </button>
                 ))}
               </div>
@@ -332,8 +332,8 @@ export default function ComplaintsPage() {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {/* Icon */}
-                  <div className={`p-2 rounded-lg shrink-0 ${complaint.type === 'USER' ? 'bg-blue-100' : 'bg-orange-100'}`}>
-                    {complaint.type === 'USER' ? (
+                  <div className={`p-2 rounded-lg shrink-0 ${complaint.type === 'CUSTOMER' ? 'bg-blue-100' : 'bg-orange-100'}`}>
+                    {complaint.type === 'CUSTOMER' ? (
                       <User size={20} className="text-blue-600" />
                     ) : (
                       <Bike size={20} className="text-orange-600" />
@@ -391,8 +391,8 @@ export default function ComplaintsPage() {
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-start gap-3 pb-4 border-b">
-              <div className={`p-3 rounded-xl shrink-0 ${selectedComplaint.type === 'USER' ? 'bg-blue-100' : 'bg-orange-100'}`}>
-                {selectedComplaint.type === 'USER' ? (
+              <div className={`p-3 rounded-xl shrink-0 ${selectedComplaint.type === 'CUSTOMER' ? 'bg-blue-100' : 'bg-orange-100'}`}>
+                {selectedComplaint.type === 'CUSTOMER' ? (
                   <User size={24} className="text-blue-600" />
                 ) : (
                   <Bike size={24} className="text-orange-600" />

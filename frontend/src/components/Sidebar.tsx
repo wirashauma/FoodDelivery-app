@@ -160,7 +160,11 @@ export default function Sidebar() {
     router.push('/auth');
   };
 
-  const toggleSubmenu = (name: string) => {
+  const toggleSubmenu = (name: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setExpandedMenus(prev => ({
       ...prev,
       [name]: !prev[name],
@@ -177,16 +181,28 @@ export default function Sidebar() {
     return false;
   };
 
+  // Auto-expand menus that have active children
+  const isMenuExpanded = (item: MenuItem): boolean => {
+    if (!item.children) return false;
+    // Check if manually toggled
+    if (expandedMenus[item.name] !== undefined) {
+      return expandedMenus[item.name];
+    }
+    // Auto-expand if has active child
+    return item.children.some(child => child.href && (pathname === child.href || pathname.startsWith(child.href + '/')));
+  };
+
   const renderMenuItem = (item: MenuItem, isChild: boolean = false) => {
     const isActive = isMenuActive(item);
     const hasChildren = item.children && item.children.length > 0;
-    const isExpanded = expandedMenus[item.name] || isActive;
+    const isExpanded = isMenuExpanded(item);
 
     if (hasChildren) {
       return (
         <div key={item.name}>
           <button
-            onClick={() => toggleSubmenu(item.name)}
+            type="button"
+            onClick={(e) => toggleSubmenu(item.name, e)}
             className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full
               ${isActive
                 ? 'bg-primary-50 text-primary-600'
@@ -205,18 +221,20 @@ export default function Sidebar() {
             </span>
             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
-          {isExpanded && (
-            <div className="ml-4 mt-1 space-y-1">
-              {item.children!.map(child => renderMenuItem(child, true))}
-            </div>
-          )}
+          <div 
+            className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-200 ${
+              isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            {item.children!.map(child => renderMenuItem(child, true))}
+          </div>
         </div>
       );
     }
 
     return (
       <Link
-        key={item.href}
+        key={item.href || item.name}
         href={item.href!}
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative
           ${isChild ? 'ml-2' : ''}
@@ -224,7 +242,10 @@ export default function Sidebar() {
             ? 'bg-primary-50 text-primary-600'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
-        onClick={closeMobileMenu}
+        onClick={(e) => {
+          e.stopPropagation();
+          closeMobileMenu();
+        }}
       >
         {isActive && !isChild && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary-500 rounded-r-full" />

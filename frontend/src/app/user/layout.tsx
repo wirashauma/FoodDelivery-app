@@ -35,7 +35,7 @@ export default function UserLayout({
   const isAuthenticated = useMemo(() => {
     const token = Cookies.get('authToken');
     const role = Cookies.get('userRole');
-    return !!token && role === 'USER';
+    return !!token && role === 'CUSTOMER';
   }, []);
 
   if (!isAuthenticated) {

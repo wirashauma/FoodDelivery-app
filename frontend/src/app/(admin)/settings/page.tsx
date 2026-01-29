@@ -14,7 +14,7 @@ import {
   EyeOff,
   Check,
 } from 'lucide-react';
-import { userAPI, authAPI } from '@/lib/api';
+import { authAPI } from '@/lib/api';
 
 interface AdminUser {
   username: string;
@@ -101,7 +101,7 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await userAPI.updateProfile({
+      await authAPI.updateProfile({
         username: profileForm.username,
         email: profileForm.email,
         phone: profileForm.phone,

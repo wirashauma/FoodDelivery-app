@@ -8,13 +8,13 @@ import Cookies from 'js-cookie';
 import { logger } from '@/lib/logger';
 import Image from 'next/image';
 
-type Role = 'USER' | 'DELIVERER';
+type Role = 'CUSTOMER' | 'DELIVERER';
 
 // Quick login credentials for testing
 const QUICK_LOGIN_ACCOUNTS = [
-  { email: 'wira@gmail.com', password: '12345678', role: 'USER', label: 'Customer', icon: User, color: 'from-primary-500 to-primary-700' },
-  { email: 'shauma@gmail.com', password: '12345678', role: 'DELIVERER', label: 'Deliverer', icon: Truck, color: 'from-blue-500 to-indigo-600' },
-  { email: 'admin@gmail.com', password: '12345678', role: 'ADMIN', label: 'Admin', icon: Zap, color: 'from-purple-500 to-violet-600' },
+  { email: 'wira@gmail.com', password: 'Wira1234', role: 'CUSTOMER', label: 'Customer', icon: User, color: 'from-primary-500 to-primary-700' },
+  { email: 'shauma@gmail.com', password: 'Wira1234', role: 'DELIVERER', label: 'Deliverer', icon: Truck, color: 'from-blue-500 to-indigo-600' },
+  { email: 'admin@gmail.com', password: 'Wira1234', role: 'ADMIN', label: 'Admin', icon: Zap, color: 'from-purple-500 to-violet-600' },
 ];
 
 export default function AuthPage() {
@@ -23,7 +23,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<Role>('USER');
+  const [selectedRole, setSelectedRole] = useState<Role>('CUSTOMER');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quickLoginLoading, setQuickLoginLoading] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function AuthPage() {
       case 'DELIVERER':
         router.push('/deliverer/dashboard');
         break;
-      case 'USER':
+      case 'CUSTOMER':
       default:
         router.push('/user/dashboard');
         break;
@@ -139,7 +139,7 @@ export default function AuthPage() {
   };
 
   const roles: { value: Role; label: string; icon: React.ReactNode; description: string }[] = [
-    { value: 'USER', label: 'Customer', icon: <User size={20} />, description: 'Pesan makanan favorit' },
+    { value: 'CUSTOMER', label: 'Customer', icon: <User size={20} />, description: 'Pesan makanan favorit' },
     { value: 'DELIVERER', label: 'Deliverer', icon: <Truck size={20} />, description: 'Antar & dapatkan uang' },
   ];
 
