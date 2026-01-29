@@ -146,21 +146,4 @@ router.patch(
   driverController.verifyDriver
 );
 
-// Suspend driver
-router.patch(
-  '/:id/suspend',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
-  auditLog('SUSPEND_DRIVER', 'driverProfile'),
-  driverController.suspendDriver
-);
-
-// Get online drivers (for monitoring)
-router.get(
-  '/monitoring/online',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'),
-  driverController.getOnlineDrivers
-);
-
 module.exports = router;
