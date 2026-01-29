@@ -109,7 +109,7 @@ function Header() {
           {/* Login Button */}
           <div className="hidden lg:flex items-center gap-4">
             <Link
-              href="/login"
+              href="/auth"
               className="px-6 py-2.5 rounded-full font-medium transition-all"
               style={{ 
                 backgroundColor: isScrolled ? '#E53935' : '#ffffff',
@@ -152,7 +152,7 @@ function Header() {
               </a>
             ))}
             <Link
-              href="/login"
+              href="/auth"
               className="block w-full text-center py-3 text-white rounded-full font-medium"
               style={{ backgroundColor: '#E53935' }}
             >
