@@ -108,24 +108,29 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+
     return Scaffold(
       body: FutureBuilder<Map<String, dynamic>>(
         future: _profileFuture,
         builder: (context, snapshot) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Profil Saya'),
+              title: Text(
+                'Profil Saya',
+                style: TextStyle(fontSize: isTablet ? 22 : 18),
+              ),
               backgroundColor: const Color(0xFFE53935),
               foregroundColor: Colors.white,
               automaticallyImplyLeading: false,
               actions: [
                 if (snapshot.hasData)
                   IconButton(
-                    icon: const Icon(Icons.edit),
+                    icon: Icon(Icons.edit, size: isTablet ? 28 : 24),
                     tooltip: 'Edit Profil',
                     onPressed: () async {
                       final userData = snapshot.data!;
-                      // [MODIFIKASI]: Pastikan kita passing data yang benar ke ProfileCompleteScreen
                       final result = await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) =>
@@ -133,14 +138,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         ),
                       );
 
-                      // Refresh data setelah edit
                       if (result == true || result == null) {
                         _refreshProfile();
                       }
                     },
                   ),
                 IconButton(
-                  icon: const Icon(Icons.logout),
+                  icon: Icon(Icons.logout, size: isTablet ? 28 : 24),
                   tooltip: 'Logout',
                   onPressed: () => _logout(force: false),
                 ),
@@ -154,31 +158,49 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("Terjadi kesalahan: ${snapshot.error}"),
-                        ElevatedButton(
+                    child: Padding(
+                      padding: EdgeInsets.all(isTablet ? 32 : 20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Terjadi kesalahan: ${snapshot.error}",
+                            style: TextStyle(fontSize: isTablet ? 18 : 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: isTablet ? 16 : 12),
+                          ElevatedButton(
                             onPressed: _refreshProfile,
-                            child: const Text('Coba Lagi'))
-                      ],
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 24,
+                                vertical: isTablet ? 14 : 10,
+                              ),
+                            ),
+                            child: Text(
+                              'Coba Lagi',
+                              style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  // ... (Logika Error "Data tidak ditemukan" Anda sudah benar) ...
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: EdgeInsets.all(isTablet ? 32 : 20),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             "Data profil tidak ditemukan.",
                             textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: isTablet ? 18 : 14),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: isTablet ? 16 : 10),
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).push(
@@ -188,7 +210,16 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                               );
                             },
-                            child: const Text('Lengkapi Profil Sekarang'),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 24,
+                                vertical: isTablet ? 14 : 10,
+                              ),
+                            ),
+                            child: Text(
+                              'Lengkapi Profil Sekarang',
+                              style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            ),
                           ),
                         ],
                       ),
@@ -197,22 +228,21 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 }
 
                 final userData = snapshot.data!;
-                // [MODIFIKASI]: Pengecekan kelengkapan profil diubah ke 'nama'
                 final String nama = userData['nama'] ?? '';
 
                 if (nama.isEmpty) {
-                  // [MODIFIKASI]: Blok "Profil belum lengkap"
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: EdgeInsets.all(isTablet ? 32 : 20),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             "Profil Anda belum lengkap.",
                             textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: isTablet ? 18 : 14),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: isTablet ? 16 : 10),
                           ElevatedButton(
                             onPressed: () async {
                               final result = await Navigator.of(context).push(
@@ -225,7 +255,16 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 _refreshProfile();
                               }
                             },
-                            child: const Text('Lengkapi Profil Sekarang'),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 32 : 24,
+                                vertical: isTablet ? 14 : 10,
+                              ),
+                            ),
+                            child: Text(
+                              'Lengkapi Profil Sekarang',
+                              style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            ),
                           ),
                         ],
                       ),
@@ -233,32 +272,40 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   );
                 }
 
-                // [MODIFIKASI]: Tampilkan profil lengkap sesuai schema.prisma
-                return ListView(
-                  padding: const EdgeInsets.all(20.0),
-                  children: [
-                    const Center(
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Color(0xFFE53935),
-                        child:
-                            Icon(Icons.person, size: 50, color: Colors.white),
-                        // Nanti Anda bisa ganti ini dengan userData['foto_profil']
-                      ),
+                return Center(
+                  child: Container(
+                    constraints: BoxConstraints(
+                        maxWidth: isTablet ? 600 : double.infinity),
+                    child: ListView(
+                      padding: EdgeInsets.all(isTablet ? 32 : 20),
+                      children: [
+                        Center(
+                          child: CircleAvatar(
+                            radius: isTablet ? 70 : 50,
+                            backgroundColor: const Color(0xFFE53935),
+                            child: Icon(
+                              Icons.person,
+                              size: isTablet ? 70 : 50,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: isTablet ? 40 : 30),
+                        _buildProfileInfo('Nama Lengkap',
+                            userData['nama'] ?? '...', isTablet),
+                        _buildProfileInfo('Tanggal Lahir',
+                            _formatTanggal(userData['tgl_lahir']), isTablet),
+                        _buildProfileInfo(
+                            'Nomor HP', userData['no_hp'] ?? '...', isTablet),
+                        _buildProfileInfo(
+                            'Alamat', userData['alamat'] ?? '...', isTablet),
+                        _buildProfileInfo(
+                            'Email', userData['email'] ?? '...', isTablet),
+                        _buildProfileInfo(
+                            'Role', userData['role'] ?? '...', isTablet),
+                      ],
                     ),
-                    const SizedBox(height: 30),
-                    _buildProfileInfo(
-                        'Nama Lengkap', userData['nama'] ?? '...'),
-
-                    // [MODIFIKASI]: Gunakan fungsi format tanggal di sini
-                    _buildProfileInfo(
-                        'Tanggal Lahir', _formatTanggal(userData['tgl_lahir'])),
-
-                    _buildProfileInfo('Nomor HP', userData['no_hp'] ?? '...'),
-                    _buildProfileInfo('Alamat', userData['alamat'] ?? '...'),
-                    _buildProfileInfo('Email', userData['email'] ?? '...'),
-                    _buildProfileInfo('Role', userData['role'] ?? '...'),
-                  ],
+                  ),
                 );
               },
             ),
@@ -268,26 +315,26 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     );
   }
 
-  Widget _buildProfileInfo(String label, String value) {
+  Widget _buildProfileInfo(String label, String value, bool isTablet) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: EdgeInsets.symmetric(vertical: isTablet ? 14 : 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.grey,
-              fontSize: 12,
+              fontSize: isTablet ? 14 : 12,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isTablet ? 6 : 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: isTablet ? 22 : 18),
           ),
-          const Divider(height: 20),
+          Divider(height: isTablet ? 28 : 20),
         ],
       ),
     );
