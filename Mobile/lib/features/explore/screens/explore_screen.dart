@@ -1,69 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:titipin_app/data/models/product_model.dart';
 import 'package:titipin_app/features/explore/screens/product_detail_screen.dart';
-import 'package:http/http.dart' as http; // <-- [MODIFIKASI]: TAMBAHKAN IMPORT
-import 'dart:convert'; // <-- [MODIFIKASI]: TAMBAHKAN IMPORT
-import 'package:titipin_app/core/constants/api_config.dart'; // <-- Gunakan API Config terpusat
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:titipin_app/core/constants/api_config.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
 
-  final List<String> categories = const [
-    "Makanan",
-    "Minuman",
-    "Snack",
-    "Buah"
-  ]; //
+  final List<String> categories = const ["Makanan", "Minuman", "Snack", "Buah"];
 
-  // [MODIFIKASI]: Fungsi simulasi diganti dengan pemanggilan API
   Future<List<Product>> _fetchProductsFromApi() async {
-    // Menggunakan API Config terpusat
     final url = Uri.parse(ApiConfig.productsEndpoint);
 
     try {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        // API mengembalikan List
         final List<dynamic> jsonData = json.decode(response.body);
 
-        // Terjemahkan JSON dari backend (nama, harga) ke model Product (name, price)
         List<Product> products = jsonData.map((data) {
           return Product(
-            // Pastikan ID di model Anda String, karena backend mengirim Int
             id: data['id'].toString(),
-
-            // TERJEMAHAN:
-            name: data['nama'], // 'nama' (backend) -> 'name' (model)
-            price: (data['harga'] as int)
-                .toDouble(), // 'harga' (backend) -> 'price' (model)
-            description: data[
-                'deskripsi'], // 'deskripsi' (backend) -> 'description' (model)
-            category:
-                data['kategori'], // 'kategori' (backend) -> 'category' (model)
-
+            name: data['nama'],
+            price: (data['harga'] as int).toDouble(),
+            description: data['deskripsi'],
+            category: data['kategori'],
             imageUrl: data['imageUrl'],
-
-            // Data ini belum ada di DB, kita beri nilai default
-            // averageRating: 0.0,
             ratingCount: 0,
           );
         }).toList();
 
         return products;
       } else {
-        // Gagal mengambil data dari server
         throw Exception('Gagal memuat produk: ${response.statusCode}');
       }
     } catch (e) {
-      // Gagal terhubung ke server
       throw Exception('Error koneksi: ${e.toString()}');
     }
   }
-  // --- AKHIR MODIFIKASI ---
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
@@ -71,14 +52,12 @@ class ExploreScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-              _buildSearchBar(),
-              _buildPromoBanner(),
-              const SizedBox(height: 20),
-
-              // [MODIFIKASI]: Ganti 'future'
+              _buildHeader(isTablet),
+              _buildSearchBar(isTablet),
+              _buildPromoBanner(isTablet),
+              SizedBox(height: isTablet ? 28 : 20),
               FutureBuilder<List<Product>>(
-                future: _fetchProductsFromApi(), // <-- Panggil fungsi API baru
+                future: _fetchProductsFromApi(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -108,12 +87,13 @@ class ExploreScreen extends StatelessWidget {
                         context: context,
                         title: category,
                         items: categoryProducts,
+                        isTablet: isTablet,
                       );
                     }).toList(),
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: isTablet ? 28 : 20),
             ],
           ),
         ),
@@ -121,31 +101,46 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  // --- Sisa Widget (Header, Search, Banner, etc.) tidak perlu diubah ---
-  // ... (Salin semua fungsi _buildHeader, _buildSearchBar,
-  //      _buildPromoBanner, _buildCategorySection,
-  //      dan _buildFoodItemCard dari file asli Anda) ...
-
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isTablet) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      padding: EdgeInsets.fromLTRB(isTablet ? 32 : 20, isTablet ? 28 : 20,
+          isTablet ? 32 : 20, isTablet ? 14 : 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("What we offer",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              Text("Our menu that we provide",
-                  style: TextStyle(color: Colors.grey)),
+              Text(
+                "What we offer",
+                style: TextStyle(
+                    fontSize: isTablet ? 32 : 24, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "Our menu that we provide",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: isTablet ? 16 : 14,
+                ),
+              ),
             ],
           ),
           Row(
             children: [
               IconButton(
-                  onPressed: () {}, icon: const Icon(Icons.notifications_none)),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
+                onPressed: () {},
+                icon: Icon(
+                  Icons.notifications_none,
+                  size: isTablet ? 28 : 24,
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(
+                  Icons.search,
+                  size: isTablet ? 28 : 24,
+                ),
+              ),
             ],
           ),
         ],
@@ -153,15 +148,19 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(bool isTablet) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+      padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 32.0 : 20.0, vertical: isTablet ? 14.0 : 10.0),
       child: TextField(
+        style: TextStyle(fontSize: isTablet ? 18 : 16),
         decoration: InputDecoration(
           hintText: 'Search for food',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon:
+              Icon(Icons.search, color: Colors.grey, size: isTablet ? 28 : 24),
           filled: true,
           fillColor: Colors.grey[200],
+          contentPadding: EdgeInsets.symmetric(vertical: isTablet ? 16 : 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30.0),
             borderSide: BorderSide.none,
@@ -171,50 +170,63 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPromoBanner() {
+  Widget _buildPromoBanner(bool isTablet) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-      height: 150,
+      margin: EdgeInsets.symmetric(
+          horizontal: isTablet ? 32.0 : 20.0, vertical: isTablet ? 14.0 : 10.0),
+      height: isTablet ? 200 : 150,
       decoration: BoxDecoration(
         color: Colors.redAccent,
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(isTablet ? 24.0 : 20.0),
         image: const DecorationImage(
           image: AssetImage("assets/images/fast_food.png"),
           fit: BoxFit.cover,
           opacity: 0.8,
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           "Promo Spesial Hari Ini!",
           style: TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: isTablet ? 28 : 22,
+              fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
-  Widget _buildCategorySection(
-      {required BuildContext context,
-      required String title,
-      required List<Product> items}) {
+  Widget _buildCategorySection({
+    required BuildContext context,
+    required String title,
+    required List<Product> items,
+    required bool isTablet,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-          child: Text(title,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          padding: EdgeInsets.symmetric(
+              horizontal: isTablet ? 32.0 : 20.0,
+              vertical: isTablet ? 14.0 : 10.0),
+          child: Text(
+            title,
+            style: TextStyle(
+                fontSize: isTablet ? 24 : 20, fontWeight: FontWeight.bold),
+          ),
         ),
         SizedBox(
-          height: 220,
+          height: isTablet ? 280 : 220,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(left: 20.0),
+            padding: EdgeInsets.only(left: isTablet ? 32.0 : 20.0),
             itemCount: items.length,
             itemBuilder: (ctx, index) {
-              return _buildFoodItemCard(context: context, item: items[index]);
+              return _buildFoodItemCard(
+                context: context,
+                item: items[index],
+                isTablet: isTablet,
+              );
             },
           ),
         ),
@@ -222,8 +234,13 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFoodItemCard(
-      {required BuildContext context, required Product item}) {
+  Widget _buildFoodItemCard({
+    required BuildContext context,
+    required Product item,
+    required bool isTablet,
+  }) {
+    final cardWidth = isTablet ? 200.0 : 150.0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -234,14 +251,14 @@ class ExploreScreen extends StatelessWidget {
         );
       },
       child: Container(
-        width: 150,
-        margin: const EdgeInsets.only(right: 15.0),
+        width: cardWidth,
+        margin: EdgeInsets.only(right: isTablet ? 20.0 : 15.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(15.0),
+                borderRadius: BorderRadius.circular(isTablet ? 20.0 : 15.0),
                 child: item.imageUrl.isNotEmpty
                     ? Image.network(
                         item.imageUrl,
@@ -272,13 +289,21 @@ class ExploreScreen extends StatelessWidget {
                       ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(item.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis),
+            SizedBox(height: isTablet ? 12 : 8),
+            Text(
+              item.name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: isTablet ? 16 : 14,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
             Text(
               'Rp ${item.price.toStringAsFixed(0)}',
-              style: TextStyle(color: Colors.grey[700]),
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: isTablet ? 15 : 13,
+              ),
             ),
           ],
         ),

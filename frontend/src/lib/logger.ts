@@ -135,7 +135,7 @@ class Logger {
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('app_logs', JSON.stringify(this.logs.slice(-100)));
-      } catch (e) {
+      } catch {
         // Storage might be full or disabled
       }
     }
@@ -148,7 +148,7 @@ class Logger {
         if (stored) {
           this.logs = JSON.parse(stored);
         }
-      } catch (e) {
+      } catch {
         // Invalid or no data
       }
     }

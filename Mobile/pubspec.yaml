@@ -22,6 +22,23 @@ dependencies:
   shared_preferences: ^2.5.3
   provider: ^6.1.5+1
   socket_io_client: ^3.1.2
+  
+  # Location
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+  
+  # Camera & OCR
+  camera: ^0.11.1
+  google_mlkit_text_recognition: ^0.14.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  
+  # Smooth page indicator for onboarding
+  smooth_page_indicator: ^1.2.0+3
+  
+  # Image processing
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

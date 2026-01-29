@@ -130,9 +130,15 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Keranjang Saya'),
+        title: Text(
+          'Keranjang Saya',
+          style: TextStyle(fontSize: isTablet ? 22 : 18),
+        ),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
@@ -148,7 +154,12 @@ class _CartScreenState extends State<CartScreen> {
 
           // Cukup cek ini:
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Keranjang Anda masih kosong.'));
+            return Center(
+              child: Text(
+                'Keranjang Anda masih kosong.',
+                style: TextStyle(fontSize: isTablet ? 18 : 14),
+              ),
+            );
           }
 
           final cartItems = snapshot.data!;
@@ -157,153 +168,214 @@ class _CartScreenState extends State<CartScreen> {
             subtotal += (data['price'] ?? 0.0) * (data['quantity'] ?? 0);
           }
 
-          return Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  itemCount: cartItems.length,
-                  itemBuilder: (context, index) {
-                    final item = cartItems[index];
-                    final productId = item['productId'] as String;
-                    final quantity = item['quantity'] ?? 0;
-                    final String note = item['note'] ?? '';
-                    final String imageUrl = item['imageUrl'] ?? '';
-
-                    return ListTile(
-                      leading: SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: imageUrl.isNotEmpty
-                              ? Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return Center(
-                                        child: CircularProgressIndicator(
-                                      strokeWidth: 2.0,
-                                      value: progress.expectedTotalBytes != null
-                                          ? progress.cumulativeBytesLoaded /
-                                              progress.expectedTotalBytes!
-                                          : null,
-                                    ));
-                                  },
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                          color: Colors.grey[200],
-                                          child: const Icon(Icons.broken_image,
-                                              color: Colors.grey)),
-                                )
-                              : Container(
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.image_not_supported,
-                                      color: Colors.grey),
-                                ),
-                        ),
+          return Center(
+            child: Container(
+              constraints:
+                  BoxConstraints(maxWidth: isTablet ? 800 : double.infinity),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 24 : 0,
+                        vertical: isTablet ? 16 : 0,
                       ),
-                      title: Text(item['name'] ?? 'Nama Produk'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              'Rp ${item['price']?.toStringAsFixed(0) ?? '0'}'),
-                          if (note.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                'Catatan: $note',
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.blueGrey,
-                                    fontStyle: FontStyle.italic),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                      itemCount: cartItems.length,
+                      itemBuilder: (context, index) {
+                        final item = cartItems[index];
+                        final productId = item['productId'] as String;
+                        final quantity = item['quantity'] ?? 0;
+                        final String note = item['note'] ?? '';
+                        final String imageUrl = item['imageUrl'] ?? '';
+
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: isTablet ? 8 : 0,
+                          ),
+                          child: ListTile(
+                            leading: SizedBox(
+                              width: isTablet ? 70 : 50,
+                              height: isTablet ? 70 : 50,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                    isTablet ? 12.0 : 8.0),
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder:
+                                            (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return Center(
+                                              child: CircularProgressIndicator(
+                                            strokeWidth: 2.0,
+                                            value: progress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? progress
+                                                        .cumulativeBytesLoaded /
+                                                    progress.expectedTotalBytes!
+                                                : null,
+                                          ));
+                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(
+                                                        Icons.broken_image,
+                                                        color: Colors.grey)),
+                                      )
+                                    : Container(
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey),
+                                      ),
                               ),
                             ),
-                        ],
-                      ),
-                      isThreeLine: note.isNotEmpty,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: () => _cartService.updateItemQuantity(
-                                productId, quantity - 1),
+                            title: Text(
+                              item['name'] ?? 'Nama Produk',
+                              style: TextStyle(fontSize: isTablet ? 18 : 16),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Rp ${item['price']?.toStringAsFixed(0) ?? '0'}',
+                                  style:
+                                      TextStyle(fontSize: isTablet ? 16 : 14),
+                                ),
+                                if (note.isNotEmpty)
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                        top: isTablet ? 6.0 : 4.0),
+                                    child: Text(
+                                      'Catatan: $note',
+                                      style: TextStyle(
+                                          fontSize: isTablet ? 14 : 12,
+                                          color: Colors.blueGrey,
+                                          fontStyle: FontStyle.italic),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            isThreeLine: note.isNotEmpty,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.remove,
+                                      size: isTablet ? 28 : 24),
+                                  onPressed: () =>
+                                      _cartService.updateItemQuantity(
+                                          productId, quantity - 1),
+                                ),
+                                Text(
+                                  quantity.toString(),
+                                  style:
+                                      TextStyle(fontSize: isTablet ? 18 : 14),
+                                ),
+                                IconButton(
+                                  icon:
+                                      Icon(Icons.add, size: isTablet ? 28 : 24),
+                                  onPressed: () =>
+                                      _cartService.updateItemQuantity(
+                                          productId, quantity + 1),
+                                ),
+                              ],
+                            ),
                           ),
-                          Text(quantity.toString()),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => _cartService.updateItemQuantity(
-                                productId, quantity + 1),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5)
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Alamat Pengantaran',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _addressController,
-                      decoration: InputDecoration(
-                          hintText: 'Contoh: Kosan Rimbun, Gedung A, Kamar 101',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8)),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Subtotal',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('Rp ${subtotal.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(isTablet ? 24.0 : 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            spreadRadius: 1,
+                            blurRadius: 5)
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _placeOrder,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE53935),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alamat Pengantaran',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isTablet ? 18 : 14,
+                          ),
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : const Text('Lanjut Buat Pesanan'),
-                      ),
+                        SizedBox(height: isTablet ? 12 : 8),
+                        TextField(
+                          controller: _addressController,
+                          style: TextStyle(fontSize: isTablet ? 16 : 14),
+                          decoration: InputDecoration(
+                              hintText:
+                                  'Contoh: Kosan Rimbun, Gedung A, Kamar 101',
+                              hintStyle:
+                                  TextStyle(fontSize: isTablet ? 16 : 14),
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(isTablet ? 12 : 8),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: isTablet ? 16 : 12,
+                                  vertical: isTablet ? 14 : 8)),
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Subtotal',
+                              style: TextStyle(
+                                  fontSize: isTablet ? 22 : 18,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Rp ${subtotal.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                  fontSize: isTablet ? 22 : 18,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _placeOrder,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE53935),
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                vertical: isTablet ? 18 : 15,
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : Text(
+                                    'Lanjut Buat Pesanan',
+                                    style:
+                                        TextStyle(fontSize: isTablet ? 18 : 16),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),

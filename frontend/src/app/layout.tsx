@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import DebugPanel from "@/components/DebugPanel";
+import DebugPanelWrapper from "@/components/DebugPanelWrapper";
 import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
@@ -55,7 +55,7 @@ export default function RootLayout({
           }}
         />
         {children}
-        {process.env.NODE_ENV !== 'production' && <DebugPanel />}
+        <DebugPanelWrapper />
       </body>
     </html>
   );

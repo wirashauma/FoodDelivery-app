@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Tugasakhir</string>
+	<string>Titipin</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>tugasakhir</string>
+	<string>Titipin</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -28,6 +28,23 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>Titipin memerlukan akses kamera untuk scan dokumen dan verifikasi wajah</string>
+	
+	<!-- Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Titipin memerlukan akses lokasi untuk menentukan alamat pengiriman</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Titipin memerlukan akses lokasi untuk tracking pengiriman real-time</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Titipin memerlukan akses lokasi untuk tracking pengiriman real-time</string>
+	
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Titipin memerlukan akses galeri untuk upload foto dokumen</string>
+	
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
