@@ -14,7 +14,7 @@ const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 const generateAccessToken = (user, platform = 'web') => {
   const payload = {
     user: {
-      id: user.user_id,
+      id: user.id,
       role: user.role,
       email: user.email,
     },
@@ -50,7 +50,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Role tidak valid. Gunakan USER, DELIVERER, atau ADMIN' });
     }
 
-    const existing = await prisma.users.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { email: email },
     });
 
@@ -60,14 +60,14 @@ exports.register = async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const result = await prisma.users.create({
+    const result = await prisma.user.create({
       data: {
         email: email,
-        password_hash: hashed,
+        passwordHash: hashed,
         role: role, // <-- MODIFIKASI: Simpan role ke database
       },
       select: {
-        user_id: true,
+        id: true,
         email: true,
         role: true, // <-- MODIFIKASI: Kembalikan role di response
       },
@@ -92,7 +92,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: email },
     });
 
@@ -100,7 +100,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: 'Email atau password salah' });
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return res.status(400).json({ error: 'Email atau password salah' });
 
     const platform = req.platform || 'web';
@@ -114,9 +114,9 @@ exports.login = async (req, res) => {
     await prisma.refreshToken.create({
       data: {
         token: refreshToken,
-        user_id: user.user_id,
-        expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
-        device_info: deviceInfo.substring(0, 255),
+        userId: user.id,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
+        deviceInfo: deviceInfo.substring(0, 255),
       },
     });
 
@@ -126,10 +126,10 @@ exports.login = async (req, res) => {
       refreshToken,
       expiresIn: 900, // 15 minutes in seconds
       user: {
-        id: user.user_id,
+        id: user.id,
         email: user.email,
         role: user.role,
-        nama: user.nama,
+        nama: user.fullName,
       },
     });
   } catch (error) {
@@ -163,7 +163,7 @@ exports.refreshToken = async (req, res) => {
     }
 
     // Check if token is expired
-    if (new Date() > storedToken.expires_at) {
+    if (new Date() > storedToken.expiresAt) {
       // Delete expired token
       await prisma.refreshToken.delete({
         where: { id: storedToken.id },
@@ -188,9 +188,9 @@ exports.refreshToken = async (req, res) => {
       prisma.refreshToken.create({
         data: {
           token: newRefreshToken,
-          user_id: user.user_id,
-          expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
-          device_info: deviceInfo.substring(0, 255),
+          userId: user.id,
+          expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
+          deviceInfo: deviceInfo.substring(0, 255),
         },
       }),
     ]);
@@ -234,7 +234,7 @@ exports.logoutAll = async (req, res) => {
 
     // Revoke all refresh tokens for this user
     await prisma.refreshToken.updateMany({
-      where: { user_id: userId },
+      where: { userId: userId },
       data: { revoked: true },
     });
 
@@ -252,17 +252,17 @@ exports.getSessions = async (req, res) => {
 
     const sessions = await prisma.refreshToken.findMany({
       where: {
-        user_id: userId,
+        userId: userId,
         revoked: false,
-        expires_at: { gt: new Date() },
+        expiresAt: { gt: new Date() },
       },
       select: {
         id: true,
-        device_info: true,
-        created_at: true,
-        expires_at: true,
+        deviceInfo: true,
+        createdAt: true,
+        expiresAt: true,
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     res.json({ sessions });
@@ -281,7 +281,7 @@ exports.forgotPassword = async (req, res) => {
       return res.status(400).json({ error: 'Email dibutuhkan' });
     }
 
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
     });
 
@@ -299,7 +299,7 @@ exports.forgotPassword = async (req, res) => {
 
     // Invalidate existing tokens
     await prisma.passwordResetToken.updateMany({
-      where: { user_id: user.user_id, used: false },
+      where: { userId: user.id, used: false },
       data: { used: true },
     });
 
@@ -307,8 +307,8 @@ exports.forgotPassword = async (req, res) => {
     await prisma.passwordResetToken.create({
       data: {
         token: hashedToken,
-        user_id: user.user_id,
-        expires_at: expiresAt,
+        userId: user.id,
+        expiresAt: expiresAt,
       },
     });
 
@@ -346,7 +346,7 @@ exports.resetPassword = async (req, res) => {
       where: {
         token: hashedToken,
         used: false,
-        expires_at: { gt: new Date() },
+        expiresAt: { gt: new Date() },
       },
       include: { user: true },
     });
@@ -360,9 +360,9 @@ exports.resetPassword = async (req, res) => {
 
     // Update password and mark token as used
     await prisma.$transaction([
-      prisma.users.update({
-        where: { user_id: resetToken.user_id },
-        data: { password_hash: hashedPassword },
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash: hashedPassword },
       }),
       prisma.passwordResetToken.update({
         where: { id: resetToken.id },
@@ -370,7 +370,7 @@ exports.resetPassword = async (req, res) => {
       }),
       // Revoke all refresh tokens for security
       prisma.refreshToken.updateMany({
-        where: { user_id: resetToken.user_id },
+        where: { userId: resetToken.userId },
         data: { revoked: true },
       }),
     ]);
@@ -396,8 +396,8 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ error: 'Password minimal 6 karakter' });
     }
 
-    const user = await prisma.users.findUnique({
-      where: { user_id: userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
     if (!user) {
@@ -405,16 +405,16 @@ exports.changePassword = async (req, res) => {
     }
 
     // Verify current password
-    const isValid = await bcrypt.compare(currentPassword, user.password_hash);
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
       return res.status(400).json({ error: 'Password lama salah' });
     }
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.users.update({
-      where: { user_id: userId },
-      data: { password_hash: hashedPassword },
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: hashedPassword },
     });
 
     res.json({ message: 'Password berhasil diubah' });
