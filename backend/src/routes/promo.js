@@ -29,13 +29,6 @@ router.get(
   promoController.getUserVouchers
 );
 
-// Claim voucher by code
-router.post(
-  '/vouchers/claim',
-  authenticate,
-  promoController.claimVoucher
-);
-
 // ==================== ADMIN PROMO BANNER ROUTES ====================
 
 // Get all promos
@@ -44,14 +37,6 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'),
   promoController.getAllPromos
-);
-
-// Get promo by ID
-router.get(
-  '/banners/:id',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'),
-  promoController.getPromoById
 );
 
 // Create promo
@@ -79,15 +64,6 @@ router.delete(
   authorize('ADMIN', 'SUPER_ADMIN'),
   auditLog('DELETE_PROMO', 'promo'),
   promoController.deletePromo
-);
-
-// Toggle promo status
-router.patch(
-  '/banners/:id/toggle',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'),
-  auditLog('TOGGLE_PROMO', 'promo'),
-  promoController.togglePromoStatus
 );
 
 // ==================== ADMIN VOUCHER ROUTES ====================
@@ -141,24 +117,6 @@ router.get(
   authenticate,
   authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF', 'FINANCE_STAFF'),
   promoController.getVoucherStats
-);
-
-// Duplicate voucher
-router.post(
-  '/vouchers/:id/duplicate',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'),
-  auditLog('DUPLICATE_VOUCHER', 'voucher'),
-  promoController.duplicateVoucher
-);
-
-// Bulk create voucher codes
-router.post(
-  '/vouchers/bulk-generate',
-  authenticate,
-  authorize('ADMIN', 'SUPER_ADMIN'),
-  auditLog('BULK_GENERATE_VOUCHERS', 'voucher'),
-  promoController.bulkGenerateVouchers
 );
 
 module.exports = router;
