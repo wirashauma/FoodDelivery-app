@@ -86,6 +86,17 @@ class ApiConfig {
   static String delivererCompletedEndpoint({int limit = 10, int offset = 0}) =>
       '$baseUrl/orders/deliverer/completed?limit=$limit&offset=$offset';
 
+  // Driver Onboarding Endpoints
+  static String get driverRegisterEndpoint => '$baseUrl/driver/register';
+  static String get driverProfileEndpoint => '$baseUrl/driver/profile';
+  static String get driverDocumentsEndpoint => '$baseUrl/driver/documents';
+  static String get driverVerificationStatusEndpoint =>
+      '$baseUrl/driver/verification-status';
+  static String get driverFaceVerificationEndpoint =>
+      '$baseUrl/driver/face-verification';
+  static String get driverStatusEndpoint => '$baseUrl/driver/status';
+  static String get driverLocationEndpoint => '$baseUrl/driver/location';
+
   // Chat Endpoints
   static String get chatsEndpoint => '$baseUrl/chats';
   static String get chatListEndpoint => '$baseUrl/chats/my-list';
