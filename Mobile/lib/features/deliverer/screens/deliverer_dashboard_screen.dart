@@ -43,9 +43,15 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Pengiriman'),
+        title: Text(
+          'Dashboard Pengiriman',
+          style: TextStyle(fontSize: isTablet ? 22 : 18),
+        ),
         elevation: 0,
         backgroundColor: const Color(0xFF10B981),
         foregroundColor: Colors.white,
@@ -53,86 +59,100 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _buildErrorWidget()
-              : _buildDashboardContent(),
+              ? _buildErrorWidget(isTablet)
+              : _buildDashboardContent(isTablet),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _loadDashboardStats,
-        label: const Text('Refresh'),
-        icon: const Icon(Icons.refresh),
+        label: Text('Refresh', style: TextStyle(fontSize: isTablet ? 16 : 14)),
+        icon: Icon(Icons.refresh, size: isTablet ? 24 : 20),
         backgroundColor: const Color(0xFF10B981),
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
+  Widget _buildErrorWidget(bool isTablet) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(_error!),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadDashboardStats,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-            ),
-            child: const Text('Coba Lagi'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDashboardContent() {
-    final stats = _stats ?? {};
-
-    return RefreshIndicator(
-      onRefresh: _loadDashboardStats,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 32.0 : 16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Header dengan salam
-            _buildHeaderSection(),
-            const SizedBox(height: 24),
-
-            // Stats Grid (2x2)
-            _buildStatsGrid(stats),
-            const SizedBox(height: 24),
-
-            // Quick Actions
-            _buildQuickActionsSection(),
-            const SizedBox(height: 24),
-
-            // Achievements
-            _buildAchievementsSection(stats),
+            Icon(Icons.error_outline,
+                size: isTablet ? 80 : 64, color: Colors.red),
+            SizedBox(height: isTablet ? 24 : 16),
+            Text(
+              _error!,
+              style: TextStyle(fontSize: isTablet ? 18 : 14),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: isTablet ? 24 : 16),
+            ElevatedButton(
+              onPressed: _loadDashboardStats,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 32 : 24,
+                  vertical: isTablet ? 16 : 12,
+                ),
+              ),
+              child: Text(
+                'Coba Lagi',
+                style: TextStyle(fontSize: isTablet ? 16 : 14),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
+  Widget _buildDashboardContent(bool isTablet) {
+    final stats = _stats ?? {};
+
+    return RefreshIndicator(
+      onRefresh: _loadDashboardStats,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isTablet ? 24 : 16),
+        child: Center(
+          child: Container(
+            constraints:
+                BoxConstraints(maxWidth: isTablet ? 800 : double.infinity),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderSection(isTablet),
+                SizedBox(height: isTablet ? 32 : 24),
+                _buildStatsGrid(stats, isTablet),
+                SizedBox(height: isTablet ? 32 : 24),
+                _buildQuickActionsSection(isTablet),
+                SizedBox(height: isTablet ? 32 : 24),
+                _buildAchievementsSection(stats, isTablet),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderSection(bool isTablet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Selamat datang! 👋',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: isTablet ? 32 : 24,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
+            color: const Color(0xFF1F2937),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isTablet ? 12 : 8),
         Text(
           'Kelola pesanan pengiriman Anda dengan mudah',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: isTablet ? 18 : 14,
             color: Colors.grey[600],
           ),
         ),
@@ -140,18 +160,19 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     );
   }
 
-  Widget _buildStatsGrid(Map<String, dynamic> stats) {
+  Widget _buildStatsGrid(Map<String, dynamic> stats, bool isTablet) {
     final newOrders = stats['newOrders'] ?? 0;
     final activeOrders = stats['activeOrders'] ?? 0;
     final completedThisMonth = stats['completedThisMonth'] ?? 0;
     final averageRating = stats['averageRating'] ?? 4.8;
 
     return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
+      crossAxisCount: isTablet ? 4 : 2,
+      crossAxisSpacing: isTablet ? 16 : 12,
+      mainAxisSpacing: isTablet ? 16 : 12,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: isTablet ? 1.2 : 1.0,
       children: [
         _buildStatCard(
           title: 'Pesanan Baru',
@@ -159,6 +180,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           icon: Icons.shopping_bag_outlined,
           color: const Color(0xFF3B82F6),
           badge: newOrders > 0 ? newOrders.toString() : null,
+          isTablet: isTablet,
         ),
         _buildStatCard(
           title: 'Pekerjaan Aktif',
@@ -166,18 +188,21 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           icon: Icons.local_shipping_outlined,
           color: const Color(0xFFF59E0B),
           badge: activeOrders > 0 ? activeOrders.toString() : null,
+          isTablet: isTablet,
         ),
         _buildStatCard(
           title: 'Selesai Bulan Ini',
           value: completedThisMonth.toString(),
           icon: Icons.check_circle_outlined,
           color: const Color(0xFF10B981),
+          isTablet: isTablet,
         ),
         _buildStatCard(
           title: 'Rating Rata-rata',
           value: averageRating.toString(),
           icon: Icons.star_outlined,
           color: const Color(0xFF8B5CF6),
+          isTablet: isTablet,
         ),
       ],
     );
@@ -188,6 +213,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     required String value,
     required IconData icon,
     required Color color,
+    required bool isTablet,
     String? badge,
   }) {
     return Container(
@@ -198,24 +224,24 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
         ),
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
       ),
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isTablet ? 20 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: isTablet ? 48 : 40,
+                  height: isTablet ? 48 : 40,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Icon(icon, color: color, size: isTablet ? 28 : 24),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,16 +249,16 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
                     Text(
                       value,
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: isTablet ? 28 : 24,
                         fontWeight: FontWeight.bold,
                         color: color,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isTablet ? 6 : 4),
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: isTablet ? 14 : 12,
                         color: Colors.grey[600],
                       ),
                       maxLines: 1,
@@ -245,19 +271,20 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           ),
           if (badge != null)
             Positioned(
-              top: 8,
-              right: 8,
+              top: isTablet ? 12 : 8,
+              right: isTablet ? 12 : 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 10 : 8, vertical: isTablet ? 6 : 4),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: isTablet ? 14 : 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -268,40 +295,40 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     );
   }
 
-  Widget _buildQuickActionsSection() {
+  Widget _buildQuickActionsSection(bool isTablet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Tindakan Cepat',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isTablet ? 20 : 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
+            color: const Color(0xFF1F2937),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isTablet ? 16 : 12),
         Row(
           children: [
             Expanded(
               child: _buildActionButton(
                 icon: Icons.add_circle_outline,
                 label: 'Pesanan Baru',
+                isTablet: isTablet,
                 onTap: () {
-                  // Navigate to new orders screen
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Navigasi ke pesanan baru')),
                   );
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: isTablet ? 16 : 12),
             Expanded(
               child: _buildActionButton(
                 icon: Icons.assignment_ind_outlined,
                 label: 'Pekerjaan Saya',
+                isTablet: isTablet,
                 onTap: () {
-                  // Navigate to my tasks
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Navigasi ke pekerjaan saya')),
                   );
@@ -317,29 +344,31 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
+    required bool isTablet,
     required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(isTablet ? 16 : 12),
           decoration: BoxDecoration(
             border: Border.all(color: const Color(0xFF10B981), width: 1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
           ),
           child: Column(
             children: [
-              Icon(icon, color: const Color(0xFF10B981), size: 28),
-              const SizedBox(height: 8),
+              Icon(icon,
+                  color: const Color(0xFF10B981), size: isTablet ? 36 : 28),
+              SizedBox(height: isTablet ? 12 : 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF10B981),
+                style: TextStyle(
+                  fontSize: isTablet ? 14 : 12,
+                  color: const Color(0xFF10B981),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -350,19 +379,19 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     );
   }
 
-  Widget _buildAchievementsSection(Map<String, dynamic> stats) {
+  Widget _buildAchievementsSection(Map<String, dynamic> stats, bool isTablet) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Pencapaian',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isTablet ? 20 : 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
+            color: const Color(0xFF1F2937),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isTablet ? 16 : 12),
         Row(
           children: [
             Expanded(
@@ -371,15 +400,17 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
                 value: '95%',
                 icon: Icons.thumb_up_outlined,
                 color: const Color(0xFF10B981),
+                isTablet: isTablet,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: isTablet ? 16 : 12),
             Expanded(
               child: _buildAchievementCard(
                 title: 'Tepat Waktu',
                 value: '98%',
                 icon: Icons.schedule_outlined,
                 color: const Color(0xFF3B82F6),
+                isTablet: isTablet,
               ),
             ),
           ],
@@ -393,32 +424,33 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
     required String value,
     required IconData icon,
     required Color color,
+    required bool isTablet,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isTablet ? 24 : 16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: isTablet ? 40 : 32),
+          SizedBox(height: isTablet ? 12 : 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isTablet ? 24 : 18,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isTablet ? 6 : 4),
           Text(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: isTablet ? 14 : 12,
               color: Colors.grey[600],
             ),
           ),
