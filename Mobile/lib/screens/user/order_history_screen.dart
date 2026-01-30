@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/models/order_model.dart';
 import 'package:titipin_app/screens/user/waiting_for_offers_screen.dart';
 import 'package:titipin_app/screens/common/chat_screen.dart';
@@ -35,7 +36,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       final token = await storage.read(key: 'accessToken');
 
       if (token == null) {
-        throw Exception('Token tidak ditemukan');
+        throw Exception('Token not found');
       }
 
       final response = await http.get(
@@ -63,16 +64,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           });
         }
       } else {
-        throw Exception('Gagal memuat pesanan');
+        throw Exception('Failed to load orders');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
       }
     }
   }
@@ -80,9 +78,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return Colors.orange;
+        return AppColors.warning;
       case 'WAITING_OFFERS':
-        return Colors.blue;
+        return AppColors.info;
       case 'ACCEPTED':
         return Colors.purple;
       case 'PICKING_UP':
@@ -90,37 +88,40 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       case 'ON_THE_WAY':
         return Colors.teal;
       case 'DELIVERED':
-        return Colors.green;
       case 'COMPLETED':
-        return Colors.green;
+        return AppColors.success;
       case 'CANCELLED':
-        return Colors.red;
+        return AppColors.error;
       default:
-        return Colors.grey;
+        return AppColors.grey500;
     }
   }
 
   String _getStatusText(String status) {
     switch (status.toUpperCase()) {
       case 'PENDING':
-        return 'Menunggu';
+        return 'Pending';
       case 'WAITING_OFFERS':
-        return 'Menunggu Penawaran';
+        return 'Waiting Offers';
       case 'ACCEPTED':
-        return 'Diterima';
+        return 'Accepted';
       case 'PICKING_UP':
-        return 'Sedang Diambil';
+        return 'Picking Up';
       case 'ON_THE_WAY':
-        return 'Dalam Perjalanan';
+        return 'On The Way';
       case 'DELIVERED':
-        return 'Terkirim';
+        return 'Delivered';
       case 'COMPLETED':
-        return 'Selesai';
+        return 'Completed';
       case 'CANCELLED':
-        return 'Dibatalkan';
+        return 'Cancelled';
       default:
         return status;
     }
+  }
+
+  String _formatDate(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -132,24 +133,54 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: const Text('Pesanan Saya'),
-        backgroundColor: const Color(0xFFE53935),
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: [
-            Tab(text: 'Aktif (${_activeOrders.length})'),
-            Tab(text: 'Riwayat (${_completedOrders.length})'),
-          ],
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'My Orders',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.grey100,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: AppColors.white,
+              unselectedLabelColor: AppColors.grey600,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+              dividerColor: Colors.transparent,
+              tabs: [
+                Tab(text: 'Active (${_activeOrders.length})'),
+                Tab(text: 'History (${_completedOrders.length})'),
+              ],
+            ),
+          ),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : TabBarView(
               controller: _tabController,
               children: [
@@ -166,19 +197,35 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? Icons.receipt_long_outlined : Icons.history,
-              size: 80,
-              color: Colors.grey[400],
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isActive ? Icons.receipt_long_outlined : Icons.history,
+                size: 64,
+                color: AppColors.primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            Text(
+              isActive ? 'No active orders' : 'No order history',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               isActive
-                  ? 'Tidak ada pesanan aktif'
-                  : 'Belum ada riwayat pesanan',
+                  ? 'Start ordering your favorite meals!'
+                  : 'Your completed orders will appear here',
               style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
+                fontSize: 14,
+                color: AppColors.grey500,
               ),
             ),
           ],
@@ -188,8 +235,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
 
     return RefreshIndicator(
       onRefresh: _loadOrders,
+      color: AppColors.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         itemCount: orders.length,
         itemBuilder: (context, index) {
           final order = orders[index];
@@ -200,173 +248,209 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 
   Widget _buildOrderCard(Order order, {required bool isActive}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          if (order.status.toUpperCase() == 'WAITING_OFFERS') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WaitingForOffersScreen(orderId: order.id),
-              ),
-            ).then((_) => _loadOrders());
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Order #${order.id.substring(0, 8)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          _getStatusColor(order.status).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _getStatusText(order.status),
-                      style: TextStyle(
-                        color: _getStatusColor(order.status),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 20),
-
-              // Items summary
-              Text(
-                '${order.items?.length ?? 0} item',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 4),
-              ...(order.items ?? []).take(2).map((item) => Text(
-                    '• ${item.productName} x${item.quantity}',
-                    style: const TextStyle(fontSize: 14),
-                  )),
-              if ((order.items?.length ?? 0) > 2)
+    return GestureDetector(
+      onTap: () {
+        if (order.status.toUpperCase() == 'WAITING_OFFERS') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WaitingForOffersScreen(orderId: order.id),
+            ),
+          ).then((_) => _loadOrders());
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(
-                  '...dan ${(order.items?.length ?? 0) - 2} item lainnya',
+                  'Order #${order.id.substring(0, 8)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(order.status).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _getStatusText(order.status),
+                    style: TextStyle(
+                      color: _getStatusColor(order.status),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Divider(color: AppColors.grey200),
+            const SizedBox(height: 12),
+
+            // Items summary
+            Text(
+              '${order.items?.length ?? 0} items',
+              style: TextStyle(
+                color: AppColors.grey500,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...(order.items ?? []).take(2).map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${item.productName} x${item.quantity}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+            if ((order.items?.length ?? 0) > 2)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '...and ${(order.items?.length ?? 0) - 2} more items',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[400],
+                    color: AppColors.grey400,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-              const SizedBox(height: 12),
-
-              // Total and date
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Rp ${order.totalAmount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFFE53935),
-                    ),
-                  ),
-                  Text(
-                    _formatDate(order.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ],
               ),
+            const SizedBox(height: 16),
 
-              // Action buttons
-              if (isActive && order.delivererId != null) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ChatScreen(
-                                orderId: order.id,
-                                recipientId: order.delivererId!,
-                                recipientName:
-                                    order.delivererName ?? 'Deliverer',
-                                isDeliverer: false,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.chat_outlined, size: 18),
-                        label: const Text('Chat'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFE53935),
+            // Total and date
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '\$${order.totalAmount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppColors.primary,
+                  ),
+                ),
+                Text(
+                  _formatDate(order.createdAt),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.grey400,
+                  ),
+                ),
+              ],
+            ),
+
+            // Action buttons
+            if (isActive && order.delivererId != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          orderId: order.id,
+                          recipientId: order.delivererId!,
+                          recipientName: order.delivererName ?? 'Deliverer',
+                          isDeliverer: false,
                         ),
                       ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_outlined, size: 18),
+                  label: const Text('Chat with Deliverer'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
                     ),
-                  ],
-                ),
-              ],
-
-              // Rating for completed orders
-              if (!isActive &&
-                  order.status.toUpperCase() == 'DELIVERED' &&
-                  order.rating == null) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => RatingDialog(
-                          title: 'Beri Rating',
-                          subtitle:
-                              'Bagaimana pengalaman Anda dengan ${order.delivererName ?? 'Deliverer'}?',
-                          onSubmit: (rating, review) async {
-                            // TODO: Submit rating to API
-                            _loadOrders();
-                          },
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.star_outline, size: 18),
-                    label: const Text('Beri Rating'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.black,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
-              ],
+              ),
             ],
-          ),
+
+            // Rating for completed orders
+            if (!isActive &&
+                order.status.toUpperCase() == 'DELIVERED' &&
+                order.rating == null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => RatingDialog(
+                        title: 'Rate Delivery',
+                        subtitle:
+                            'How was your experience with ${order.delivererName ?? 'Deliverer'}?',
+                        onSubmit: (rating, review) async {
+                          _loadOrders();
+                        },
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.star_outline, size: 18),
+                  label: const Text('Rate Delivery'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.starActive,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }

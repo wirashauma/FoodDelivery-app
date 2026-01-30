@@ -123,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       (index) => buildDot(index, context),
                     ),
                   ),
-                  SizedBox(height: isSmallScreen ? 20 : 40),
+                  SizedBox(height: isSmallScreen ? 30 : 50),
                   SizedBox(
                     width: double.infinity,
                     height: isSmallScreen ? 44 : 50,
@@ -150,8 +150,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: Text(
                         _currentPage == onboardingContents.length - 1
-                            ? "Start"
-                            : "Next",
+                            ? "Get started"
+                            : "Continue",
                         style: TextStyle(
                           fontSize: isSmallScreen ? 14 : 16,
                           color: Colors.white,
@@ -160,6 +160,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   SizedBox(height: isSmallScreen ? 10 : 20),
+                  if (_currentPage != onboardingContents.length - 1)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const AuthGate(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Skip",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 44),
                 ],
               ),
             ),
@@ -172,12 +188,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget buildDot(int index, BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.only(right: 8),
+      margin: const EdgeInsets.only(right: 5),
       height: 8,
       width: _currentPage == index ? 24 : 8,
       decoration: BoxDecoration(
-        color: _currentPage == index ? const Color(0xFFE53935) : Colors.grey,
-        borderRadius: BorderRadius.circular(4),
+        color: _currentPage == index ? Colors.orange : Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(5),
       ),
     );
   }

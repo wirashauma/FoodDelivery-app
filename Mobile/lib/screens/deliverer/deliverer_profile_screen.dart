@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/services/profile_service.dart';
 import 'package:titipin_app/screens/auth/auth_gate.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -37,7 +38,10 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat profil: ${e.toString()}')),
+          SnackBar(
+            content: Text('Gagal memuat profil: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -54,14 +58,17 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
           SnackBar(
             content: Text(
                 _isOnline ? 'Anda sekarang online' : 'Anda sekarang offline'),
-            backgroundColor: _isOnline ? Colors.green : Colors.grey,
+            backgroundColor: _isOnline ? Colors.green : AppColors.grey500,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal update status: ${e.toString()}')),
+          SnackBar(
+            content: Text('Gagal update status: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -70,22 +77,85 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Apakah Anda yakin ingin keluar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.logout,
+                  color: AppColors.error,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Apakah Anda yakin ingin keluar?',
+                style: TextStyle(color: AppColors.grey500),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: AppColors.grey300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(color: AppColors.grey500),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE53935),
-            ),
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -105,217 +175,114 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil Deliverer'),
-        backgroundColor: const Color(0xFFE53935),
-        foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.white,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : RefreshIndicator(
+              color: AppColors.primary,
               onRefresh: _loadProfile,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     // Profile Header
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: const Color(0xFFE53935),
-                              backgroundImage: _profile?['avatarUrl'] != null
-                                  ? NetworkImage(_profile!['avatarUrl'])
-                                  : null,
-                              child: _profile?['avatarUrl'] == null
-                                  ? Text(
-                                      (_profile?['name'] ?? 'D')[0]
-                                          .toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _profile?['name'] ?? 'Deliverer',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _profile?['email'] ?? '',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                            const SizedBox(height: 16),
-                            // Online/Offline Toggle
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _isOnline
-                                    ? Colors.green.withValues(alpha: 0.1)
-                                    : Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _isOnline
-                                        ? Icons.circle
-                                        : Icons.circle_outlined,
-                                    size: 12,
-                                    color:
-                                        _isOnline ? Colors.green : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _isOnline ? 'Online' : 'Offline',
-                                    style: TextStyle(
-                                      color: _isOnline
-                                          ? Colors.green
-                                          : Colors.grey,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Switch(
-                                    value: _isOnline,
-                                    onChanged: (_) => _toggleOnlineStatus(),
-                                    activeTrackColor: Colors.green,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    _buildProfileHeader(),
 
-                    // Stats Card
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Statistik',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatItem(
-                                    icon: Icons.delivery_dining,
-                                    value:
-                                        '${_profile?['totalDeliveries'] ?? 0}',
-                                    label: 'Total Pengiriman',
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildStatItem(
-                                    icon: Icons.star,
-                                    value:
-                                        '${_profile?['rating']?.toStringAsFixed(1) ?? '0.0'}',
-                                    label: 'Rating',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatItem(
-                                    icon: Icons.attach_money,
-                                    value:
-                                        'Rp ${_profile?['totalEarnings'] ?? 0}',
-                                    label: 'Total Pendapatan',
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildStatItem(
-                                    icon: Icons.thumb_up,
-                                    value:
-                                        '${_profile?['completionRate'] ?? 0}%',
-                                    label: 'Tingkat Selesai',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Menu Items
-                    Card(
+                    // Stats Cards
+                    Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            'Statistik',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.delivery_dining,
+                                  value: '${_profile?['totalDeliveries'] ?? 0}',
+                                  label: 'Pengiriman',
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.star,
+                                  value:
+                                      '${_profile?['rating']?.toStringAsFixed(1) ?? '0.0'}',
+                                  label: 'Rating',
+                                  color: Colors.amber,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.attach_money,
+                                  value:
+                                      'Rp ${_profile?['totalEarnings'] ?? 0}',
+                                  label: 'Pendapatan',
+                                  color: Colors.green,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  icon: Icons.thumb_up,
+                                  value: '${_profile?['completionRate'] ?? 0}%',
+                                  label: 'Selesai',
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Menu Items
                           _buildMenuItem(
                             icon: Icons.person_outline,
                             title: 'Edit Profil',
-                            onTap: () {
-                              // Navigate to edit profile
-                            },
+                            onTap: () {},
                           ),
-                          const Divider(height: 1),
                           _buildMenuItem(
                             icon: Icons.document_scanner_outlined,
                             title: 'Dokumen Verifikasi',
-                            onTap: () {
-                              // Navigate to documents
-                            },
+                            onTap: () {},
                           ),
-                          const Divider(height: 1),
                           _buildMenuItem(
                             icon: Icons.history,
                             title: 'Riwayat Pengiriman',
-                            onTap: () {
-                              // Navigate to delivery history
-                            },
+                            onTap: () {},
                           ),
-                          const Divider(height: 1),
                           _buildMenuItem(
                             icon: Icons.account_balance_wallet_outlined,
                             title: 'Dompet',
-                            onTap: () {
-                              // Navigate to wallet
-                            },
+                            onTap: () {},
                           ),
-                          const Divider(height: 1),
                           _buildMenuItem(
                             icon: Icons.help_outline,
                             title: 'Bantuan',
-                            onTap: () {
-                              // Navigate to help
-                            },
+                            onTap: () {},
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.logout,
+                            title: 'Logout',
+                            onTap: _logout,
+                            isDestructive: true,
                           ),
                         ],
                       ),
@@ -327,31 +294,162 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
     );
   }
 
-  Widget _buildStatItem({
+  Widget _buildProfileHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Avatar
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.white, width: 3),
+            ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: AppColors.white,
+              backgroundImage: _profile?['avatarUrl'] != null
+                  ? NetworkImage(_profile!['avatarUrl'])
+                  : null,
+              child: _profile?['avatarUrl'] == null
+                  ? Text(
+                      (_profile?['name'] ?? 'D')[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _profile?['name'] ?? 'Deliverer',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _profile?['email'] ?? '',
+            style: TextStyle(
+              color: AppColors.white.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Online Toggle
+          GestureDetector(
+            onTap: _toggleOnlineStatus,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: _isOnline
+                          ? Colors.greenAccent
+                          : AppColors.white.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _isOnline ? 'Online' : 'Offline',
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: _isOnline,
+                    onChanged: (_) => _toggleOnlineStatus(),
+                    activeColor: Colors.greenAccent,
+                    activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
     required IconData icon,
     required String value,
     required String label,
+    required Color color,
   }) {
-    return Column(
-      children: [
-        Icon(icon, color: const Color(0xFFE53935), size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.grey500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -359,12 +457,58 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFFE53935)),
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right),
+    return GestureDetector(
       onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDestructive
+                    ? AppColors.error.withValues(alpha: 0.1)
+                    : AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive ? AppColors.error : AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color:
+                      isDestructive ? AppColors.error : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.grey500,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

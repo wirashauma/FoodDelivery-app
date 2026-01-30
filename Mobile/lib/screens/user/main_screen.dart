@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/screens/user/explore_screen.dart';
-import 'package:titipin_app/screens/user/cart_screen.dart';
 import 'package:titipin_app/screens/user/order_history_screen.dart';
-import 'package:titipin_app/screens/user/profile_view_screen.dart';
+import 'package:titipin_app/screens/user/cart_screen.dart';
 import 'package:titipin_app/screens/user/user_chat_list_screen.dart';
+import 'package:titipin_app/screens/user/profile_view_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,58 +14,69 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
+  int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const ExploreScreen(),
-    const CartScreen(),
-    const OrderHistoryScreen(),
-    const UserChatListScreen(),
-    const ProfileViewScreen(),
+  static const List<Widget> _pages = <Widget>[
+    ExploreScreen(), // Tab 0: Halaman utama
+    OrderHistoryScreen(), // Tab 1: Riwayat Pesanan
+    UserChatListScreen(), // Tab 2: Halaman daftar chat
+    ProfileViewScreen(), // Tab 3: Halaman profil
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+      body: _pages.elementAt(_selectedIndex),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const CartScreen()),
+          );
         },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFFE53935),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: 'Jelajahi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart),
-            label: 'Keranjang',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long),
-            label: 'Pesanan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_outlined),
-            activeIcon: Icon(Icons.chat),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.primary,
+        elevation: 4.0,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.shopping_cart_outlined),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: AppColors.primary,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              _buildNavItem(icon: Icons.home, index: 0),
+              _buildNavItem(icon: Icons.receipt_long, index: 1),
+              const SizedBox(width: 40), // Ruang kosong untuk tombol keranjang
+              _buildNavItem(icon: Icons.chat_bubble_outline, index: 2),
+              _buildNavItem(icon: Icons.person_outline, index: 3),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({required IconData icon, required int index}) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        color: _selectedIndex == index
+            ? AppColors.white
+            : AppColors.white.withValues(alpha: 0.7),
+        size: _selectedIndex == index ? 30 : 28,
+      ),
+      onPressed: () => _onItemTapped(index),
     );
   }
 }

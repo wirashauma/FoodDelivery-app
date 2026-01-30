@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/screens/auth/signup_screen.dart';
 import 'package:titipin_app/screens/auth/auth_gate.dart';
 import 'package:titipin_app/screens/auth/forgot_password_screen.dart';
@@ -21,8 +22,33 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
   bool _isLoading = false;
+  String? _quickLoginRole;
 
   final _storage = const FlutterSecureStorage();
+
+  // Quick login accounts (same as frontend)
+  static const _quickLogins = [
+    {
+      'email': 'wira@gmail.com',
+      'password': 'Wira1234',
+      'role': 'Customer',
+      'icon': Icons.person
+    },
+    {
+      'email': 'shauma@gmail.com',
+      'password': 'Wira1234',
+      'role': 'Deliverer',
+      'icon': Icons.delivery_dining
+    },
+  ];
+
+  Future<void> _quickLogin(String email, String password, String role) async {
+    setState(() => _quickLoginRole = role);
+    _emailController.text = email;
+    _passwordController.text = password;
+    await _signIn();
+    if (mounted) setState(() => _quickLoginRole = null);
+  }
 
   Future<void> _signIn() async {
     if (_isLoading) return;
@@ -52,7 +78,7 @@ class _SignInScreenState extends State<SignInScreen> {
         await _storage.write(key: 'accessToken', value: accessToken);
         await _storage.write(key: 'refreshToken', value: refreshToken);
 
-        debugPrint('✅ Login sukses, token disimpan!');
+        debugPrint('✅ Login successful!');
 
         await Future.delayed(const Duration(milliseconds: 50));
 
@@ -65,13 +91,19 @@ class _SignInScreenState extends State<SignInScreen> {
       } else if (mounted) {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal masuk: ${errorData['error']}')),
+          SnackBar(
+            content: Text('Login failed: ${errorData['error']}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error koneksi: ${e.toString()}')),
+          SnackBar(
+            content: Text('Connection error: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -100,29 +132,32 @@ class _SignInScreenState extends State<SignInScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Ilustrasi dan Judul
                 Image.asset('assets/images/signin_image.png', height: 200),
                 const SizedBox(height: 20),
                 const Text('Sign in',
                     style:
                         TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
+
+                // Form Email
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: 'Email',
-                    hintText: 'user@mail.com / deliverer@mail.com',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 15),
+
+                // Form Password
                 TextField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    hintText: ' (Bebas diisi)',
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                     suffixIcon: IconButton(
@@ -137,6 +172,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
+
+                // Remember me dan Forgot password
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -155,8 +192,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const ForgotPasswordScreen(),
-                          ),
+                              builder: (context) =>
+                                  const ForgotPasswordScreen()),
                         );
                       },
                       child: const Text('Forgot password?',
@@ -165,6 +202,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // Tombol Sign In
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -175,7 +214,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: _isLoading
+                    child: _isLoading && _quickLoginRole == null
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Sign in',
                             style:
@@ -183,6 +222,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                // Link ke Sign Up
                 Center(
                   child: RichText(
                     text: TextSpan(
@@ -208,6 +249,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                // Pembatas "Or Sign in with"
                 const Row(
                   children: [
                     Expanded(child: Divider()),
@@ -220,6 +263,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // Tombol Social Media
                 Row(
                   children: [
                     Expanded(
@@ -227,20 +272,17 @@ class _SignInScreenState extends State<SignInScreen> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Facebook login segera hadir!'),
-                              duration: Duration(seconds: 2),
-                            ),
+                                content: Text('Facebook login coming soon!')),
                           );
                         },
-                        icon: Image.asset('assets/images/facebook_logo.png',
-                            height: 20),
+                        icon: const Icon(Icons.facebook,
+                            color: Color(0xFF1877F2)),
                         label: const Text('Facebook'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
-                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
@@ -250,26 +292,64 @@ class _SignInScreenState extends State<SignInScreen> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Google login segera hadir!'),
-                              duration: Duration(seconds: 2),
-                            ),
+                                content: Text('Google login coming soon!')),
                           );
                         },
-                        icon: Image.asset('assets/images/google_logo.png',
-                            height: 20),
+                        icon: const Icon(Icons.g_mobiledata, color: Colors.red),
                         label: const Text('Google'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
-                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 25),
+
+                // Quick Login Section
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10.0),
+                      child: Text('Quick Login (Demo)',
+                          style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 15),
+
+                // Quick Login Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickLoginButton(
+                        role: 'Customer',
+                        email: 'wira@gmail.com',
+                        password: 'Wira1234',
+                        icon: Icons.person,
+                        color: const Color(0xFFE53935),
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: _buildQuickLoginButton(
+                        role: 'Deliverer',
+                        email: 'shauma@gmail.com',
+                        password: 'Wira1234',
+                        icon: Icons.delivery_dining,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
+
+                // Footer T&C
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.0),
@@ -285,6 +365,41 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildQuickLoginButton({
+    required String role,
+    required String email,
+    required String password,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isLoading = _quickLoginRole == role;
+    return ElevatedButton(
+      onPressed: isLoading ? null : () => _quickLogin(email, password, role),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: isLoading
+          ? const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                  color: Colors.white, strokeWidth: 2),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(role,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+              ],
+            ),
     );
   }
 }

@@ -3,7 +3,9 @@ import 'package:titipin_app/services/profile_service.dart';
 import 'package:titipin_app/screens/user/profile_success_screen.dart';
 
 class ProfileCompleteScreen extends StatefulWidget {
-  const ProfileCompleteScreen({super.key});
+  final Map<String, dynamic>? initialData;
+
+  const ProfileCompleteScreen({super.key, this.initialData});
 
   @override
   State<ProfileCompleteScreen> createState() => _ProfileCompleteScreenState();
@@ -20,7 +22,14 @@ class _ProfileCompleteScreenState extends State<ProfileCompleteScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExistingProfile();
+    if (widget.initialData != null) {
+      _nameController.text = widget.initialData!['name'] ?? '';
+      _phoneController.text = widget.initialData!['phone'] ?? '';
+      _addressController.text = widget.initialData!['address'] ?? '';
+      _isLoadingProfile = false;
+    } else {
+      _loadExistingProfile();
+    }
   }
 
   Future<void> _loadExistingProfile() async {
@@ -86,175 +95,141 @@ class _ProfileCompleteScreenState extends State<ProfileCompleteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lengkapi Profil'),
-        backgroundColor: const Color(0xFFE53935),
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: Colors.white,
       body: _isLoadingProfile
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE53935)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Avatar
-                    Center(
-                      child: Stack(
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      // Header Merah Melengkung
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(top: 60, bottom: 20),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(80),
+                            bottomRight: Radius.circular(80),
+                          ),
+                        ),
+                        child: Text(
+                          widget.initialData != null
+                              ? 'Edit Your Profile'
+                              : 'Fill in your bio to get\nstarted',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      // Tombol Kembali
+                      Positioned(
+                        top: 40,
+                        left: 10,
+                        child: IconButton(
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Form Fields
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: const Color(0xFFE53935),
-                            child: Text(
-                              (_nameController.text.isNotEmpty
-                                      ? _nameController.text[0]
-                                      : 'U')
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          // Name field
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nama Lengkap',
+                              hintText: 'Masukkan nama lengkap',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama harus diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Phone field
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Nomor Telepon',
+                              hintText: '08xxxxxxxxxx',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nomor telepon harus diisi';
+                              }
+                              if (value.trim().length < 10) {
+                                return 'Nomor telepon tidak valid';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Address field
+                          TextFormField(
+                            controller: _addressController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Alamat',
+                              hintText: 'Masukkan alamat lengkap',
                             ),
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.white,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.camera_alt,
-                                  size: 18,
-                                  color: Color(0xFFE53935),
-                                ),
-                                onPressed: () {
-                                  // TODO: Implement image picker
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Fitur ini segera hadir!'),
-                                    ),
-                                  );
-                                },
+                          const SizedBox(height: 40),
+
+                          // Save button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _saveProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE53935),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30)),
                               ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : Text(
+                                      widget.initialData != null
+                                          ? 'Simpan Perubahan'
+                                          : 'Lengkapi',
+                                      style: const TextStyle(
+                                          fontSize: 18, color: Colors.white),
+                                    ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Name field
-                    const Text(
-                      'Nama Lengkap',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        hintText: 'Masukkan nama lengkap',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        prefixIcon: const Icon(Icons.person_outline),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Nama harus diisi';
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Phone field
-                    const Text(
-                      'Nomor Telepon',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        hintText: '08xxxxxxxxxx',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        prefixIcon: const Icon(Icons.phone_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Nomor telepon harus diisi';
-                        }
-                        if (value.trim().length < 10) {
-                          return 'Nomor telepon tidak valid';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Address field
-                    const Text(
-                      'Alamat',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _addressController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Masukkan alamat lengkap',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        prefixIcon: const Padding(
-                          padding: EdgeInsets.only(bottom: 50),
-                          child: Icon(Icons.location_on_outlined),
-                        ),
-                        alignLabelWithHint: true,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Save button
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE53935),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Simpan',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );

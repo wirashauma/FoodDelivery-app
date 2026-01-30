@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/screens/auth/signin_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:titipin_app/config/api_config.dart';
@@ -21,18 +22,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp() async {
     if (_isLoading) return;
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     final url = Uri.parse(ApiConfig.registerEndpoint);
 
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),
           'password': _passwordController.text.trim(),
@@ -47,16 +44,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registrasi berhasil! Silakan login.'),
-            backgroundColor: Colors.green,
+            content: Text('Registration successful! Please login.'),
+            backgroundColor: AppColors.success,
           ),
         );
       } else if (mounted) {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mendaftar: ${errorData['error']}'),
-            backgroundColor: Colors.red,
+            content: Text('Failed to register: ${errorData['error']}'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -64,15 +61,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Error: Tidak bisa terhubung ke server. ${e.toString()}')),
+            content: Text('Connection error: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -96,12 +92,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Ilustrasi dan Judul
                 Image.asset('assets/images/signup_image.png', height: 200),
                 const SizedBox(height: 20),
                 const Text('Sign up',
                     style:
                         TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
+
+                // Form Email
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -113,6 +112,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 15),
+
+                // Form Password
                 TextField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -126,14 +127,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ? Icons.visibility
                           : Icons.visibility_off),
                       onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
+                        setState(
+                            () => _isPasswordVisible = !_isPasswordVisible);
                       },
                     ),
                   ),
                 ),
                 const SizedBox(height: 15),
+
+                // Dropdown Role
                 DropdownButtonFormField<String>(
                   initialValue: _selectedRole,
                   decoration: InputDecoration(
@@ -145,18 +147,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(
-                        value == 'user' ? 'User' : 'Deliverer',
+                        value == 'user' ? 'Customer' : 'Deliverer',
                         style: const TextStyle(fontSize: 16),
                       ),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedRole = newValue!;
-                    });
+                    setState(() => _selectedRole = newValue!);
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // Tombol Sign Up
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -175,6 +177,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                // Link ke Sign In
                 Center(
                   child: RichText(
                     text: TextSpan(
@@ -200,6 +204,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                // Pembatas "Or Sign up with"
                 const Row(
                   children: [
                     Expanded(child: Divider()),
@@ -212,6 +218,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // Tombol Social Media
                 Row(
                   children: [
                     Expanded(
@@ -219,20 +227,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Facebook signup segera hadir!'),
-                              duration: Duration(seconds: 2),
-                            ),
+                                content: Text('Facebook signup coming soon!')),
                           );
                         },
-                        icon: Image.asset('assets/images/facebook_logo.png',
-                            height: 20),
+                        icon: const Icon(Icons.facebook,
+                            color: Color(0xFF1877F2)),
                         label: const Text('Facebook'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
-                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
@@ -242,26 +247,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Google signup segera hadir!'),
-                              duration: Duration(seconds: 2),
-                            ),
+                                content: Text('Google signup coming soon!')),
                           );
                         },
-                        icon: Image.asset('assets/images/google_logo.png',
-                            height: 20),
+                        icon: const Icon(Icons.g_mobiledata, color: Colors.red),
                         label: const Text('Google'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           side: BorderSide(color: Colors.grey.shade300),
-                          foregroundColor: Colors.grey,
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // Footer T&C
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.0),
