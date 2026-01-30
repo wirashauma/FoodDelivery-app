@@ -188,7 +188,7 @@ exports.updateDriverProfile = async (req, res) => {
 exports.uploadDocument = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { type, documentUrl, documentNumber, expiryDate } = req.body;
+    const { type, documentUrl, documentNumber, expiryDate, extractedData } = req.body;
 
     const profile = await prisma.driverProfile.findUnique({
       where: { userId }
@@ -201,6 +201,9 @@ exports.uploadDocument = async (req, res) => {
         message: 'Driver profile not found'
       });
     }
+
+    // Serialize extracted data to notes field
+    const notesData = extractedData ? JSON.stringify(extractedData) : null;
 
     // Check if document type already exists
     const existing = await prisma.driverDocument.findFirst({
@@ -220,7 +223,8 @@ exports.uploadDocument = async (req, res) => {
           expiryDate: expiryDate ? new Date(expiryDate) : null,
           status: 'PENDING',
           verifiedAt: null,
-          verifiedBy: null
+          verifiedBy: null,
+          notes: notesData
         }
       });
     } else {
@@ -231,7 +235,8 @@ exports.uploadDocument = async (req, res) => {
           documentUrl,
           documentNumber,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
-          status: 'PENDING'
+          status: 'PENDING',
+          notes: notesData
         }
       });
     }

@@ -81,6 +81,7 @@ const menuGroups: MenuGroup[] = [
         icon: Truck,
         children: [
           { name: 'Daftar Driver', href: '/deliverers', icon: Bike },
+          { name: 'Verifikasi', href: '/deliverers/verification', icon: ClipboardList },
         ]
       },
     ],

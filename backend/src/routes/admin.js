@@ -33,6 +33,13 @@ router.get('/deliverers/:id/stats', adminAuth, adminController.getDelivererStats
 router.get('/deliverers/:id/performance', adminAuth, adminController.getDelivererPerformance);
 router.put('/deliverers/:id/status', adminAuth, adminController.toggleDelivererStatus);
 
+// Deliverer Verification Management
+router.get('/verification/stats', adminAuth, adminController.getVerificationStats);
+router.get('/verification/pending', adminAuth, adminController.getPendingVerifications);
+router.get('/verification/:id', adminAuth, adminController.getVerificationDetail);
+router.put('/verification/:id/activate', adminAuth, adminController.activateDeliverer);
+router.put('/documents/:id/verify', adminAuth, adminController.verifyDocument);
+
 // Order Management
 router.get('/orders', adminAuth, adminController.getAllOrders);
 router.get('/orders/:id', adminAuth, adminController.getOrderById);

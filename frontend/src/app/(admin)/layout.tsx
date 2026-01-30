@@ -23,6 +23,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   
   // Deliverers
   '/deliverers': { title: 'Daftar Driver', subtitle: 'Kelola driver dan kurir mitra' },
+  '/deliverers/verification': { title: 'Verifikasi Driver', subtitle: 'Verifikasi dokumen dan aktifkan akun driver' },
   
   // Promos & Marketing
   '/promos': { title: 'Promo', subtitle: 'Kelola kampanye promosi dan diskon' },

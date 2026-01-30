@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:titipin_app/features/splash/splash_screen.dart';
+import 'package:titipin_app/screens/common/splash_screen.dart';
+import 'package:titipin_app/config/app_theme.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -11,15 +12,12 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Titipin App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-      ),
+      theme: AppTheme.lightTheme,
       home: const SplashScreen(),
     );
   }

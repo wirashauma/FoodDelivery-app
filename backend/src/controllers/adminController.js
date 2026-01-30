@@ -1731,3 +1731,433 @@ exports.exportDeliverersReport = async (req, res) => {
     res.status(500).json({ error: 'Gagal export laporan deliverer' });
   }
 };
+
+// ==================== DELIVERER VERIFICATION MANAGEMENT ====================
+
+/**
+ * Get all pending deliverer verifications
+ */
+exports.getPendingVerifications = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status = 'PENDING' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const whereClause = {
+      verificationStatus: status
+    };
+
+    const [profiles, total] = await Promise.all([
+      prisma.driverProfile.findMany({
+        where: whereClause,
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              profilePicture: true,
+              createdAt: true
+            }
+          },
+          documents: {
+            orderBy: { createdAt: 'desc' }
+          }
+        }
+      }),
+      prisma.driverProfile.count({ where: whereClause })
+    ]);
+
+    res.json({
+      status: 'success',
+      data: profiles.map(profile => ({
+        id: profile.id,
+        userId: profile.userId,
+        user: {
+          id: profile.user.id,
+          fullName: profile.user.fullName,
+          email: profile.user.email,
+          phone: profile.user.phone,
+          profilePicture: profile.user.profilePicture,
+          registeredAt: profile.user.createdAt
+        },
+        vehicle: {
+          type: profile.vehicleType,
+          brand: profile.vehicleBrand,
+          model: profile.vehicleModel,
+          plateNumber: profile.plateNumber,
+          year: profile.vehicleYear,
+          color: profile.vehicleColor
+        },
+        verificationStatus: profile.verificationStatus,
+        isVerified: profile.isVerified,
+        documents: profile.documents.map(doc => ({
+          id: doc.id,
+          type: doc.type,
+          documentNumber: doc.documentNumber,
+          documentUrl: doc.documentUrl,
+          status: doc.status,
+          expiryDate: doc.expiryDate,
+          notes: doc.notes,
+          createdAt: doc.createdAt,
+          verifiedAt: doc.verifiedAt
+        })),
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Get pending verifications error:', error);
+    res.status(500).json({ error: 'Gagal mengambil daftar verifikasi pending' });
+  }
+};
+
+/**
+ * Get deliverer verification detail
+ */
+exports.getVerificationDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const profile = await prisma.driverProfile.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            profilePicture: true,
+            dateOfBirth: true,
+            createdAt: true,
+            isActive: true
+          }
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Driver profile tidak ditemukan' });
+    }
+
+    // Parse extracted data from documents
+    const documentsWithData = profile.documents.map(doc => {
+      let extractedData = {};
+      if (doc.notes) {
+        try {
+          extractedData = JSON.parse(doc.notes);
+        } catch (e) {
+          extractedData = {};
+        }
+      }
+      return {
+        id: doc.id,
+        type: doc.type,
+        documentNumber: doc.documentNumber,
+        documentUrl: doc.documentUrl,
+        status: doc.status,
+        expiryDate: doc.expiryDate,
+        extractedData,
+        createdAt: doc.createdAt,
+        verifiedAt: doc.verifiedAt,
+        verifiedBy: doc.verifiedBy
+      };
+    });
+
+    res.json({
+      status: 'success',
+      data: {
+        id: profile.id,
+        userId: profile.userId,
+        user: {
+          id: profile.user.id,
+          fullName: profile.user.fullName,
+          email: profile.user.email,
+          phone: profile.user.phone,
+          profilePicture: profile.user.profilePicture,
+          dateOfBirth: profile.user.dateOfBirth,
+          registeredAt: profile.user.createdAt,
+          isActive: profile.user.isActive
+        },
+        vehicle: {
+          type: profile.vehicleType,
+          brand: profile.vehicleBrand,
+          model: profile.vehicleModel,
+          plateNumber: profile.plateNumber,
+          year: profile.vehicleYear,
+          color: profile.vehicleColor
+        },
+        verificationStatus: profile.verificationStatus,
+        isVerified: profile.isVerified,
+        verifiedAt: profile.verifiedAt,
+        rejectionReason: profile.rejectionReason,
+        documents: documentsWithData,
+        performance: {
+          totalDeliveries: profile.totalDeliveries,
+          averageRating: profile.averageRating,
+          totalRatings: profile.totalRatings,
+          acceptanceRate: profile.acceptanceRate,
+          completionRate: profile.completionRate
+        },
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get verification detail error:', error);
+    res.status(500).json({ error: 'Gagal mengambil detail verifikasi' });
+  }
+};
+
+/**
+ * Verify a specific document
+ */
+exports.verifyDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, notes } = req.body; // action: 'APPROVED' or 'REJECTED'
+    const adminId = req.user.id;
+
+    if (!['APPROVED', 'REJECTED'].includes(action)) {
+      return res.status(400).json({ error: 'Action harus APPROVED atau REJECTED' });
+    }
+
+    const document = await prisma.driverDocument.findUnique({
+      where: { id: parseInt(id) },
+      include: { driverProfile: true }
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
+    }
+
+    const updatedDocument = await prisma.driverDocument.update({
+      where: { id: parseInt(id) },
+      data: {
+        status: action,
+        verifiedAt: new Date(),
+        verifiedBy: adminId,
+        notes: notes || document.notes
+      }
+    });
+
+    // Check if all required documents are approved
+    const allDocs = await prisma.driverDocument.findMany({
+      where: { driverProfileId: document.driverProfileId }
+    });
+
+    const hasApprovedKTP = allDocs.some(d => d.type === 'KTP' && d.status === 'APPROVED');
+    const hasApprovedSIM = allDocs.some(d => d.type === 'SIM' && d.status === 'APPROVED');
+    const hasApprovedFace = allDocs.some(d => d.type === 'FACE' && d.status === 'APPROVED');
+    const hasRejected = allDocs.some(d => d.status === 'REJECTED');
+
+    // Update driver profile verification status
+    let profileStatus = 'UNDER_REVIEW';
+    if (hasApprovedKTP && hasApprovedSIM && hasApprovedFace) {
+      profileStatus = 'APPROVED';
+    } else if (hasRejected) {
+      profileStatus = 'PENDING'; // Allow re-upload
+    }
+
+    await prisma.driverProfile.update({
+      where: { id: document.driverProfileId },
+      data: { 
+        verificationStatus: profileStatus,
+        isVerified: profileStatus === 'APPROVED',
+        verifiedAt: profileStatus === 'APPROVED' ? new Date() : null
+      }
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        adminId,
+        action: action === 'APPROVED' ? 'APPROVE' : 'REJECT',
+        entityType: 'DRIVER_DOCUMENT',
+        entityId: document.id,
+        description: JSON.stringify({
+          documentType: document.type,
+          driverProfileId: document.driverProfileId,
+          notes
+        })
+      }
+    });
+
+    res.json({
+      status: 'success',
+      message: `Dokumen berhasil ${action === 'APPROVED' ? 'disetujui' : 'ditolak'}`,
+      data: updatedDocument
+    });
+  } catch (error) {
+    console.error('Verify document error:', error);
+    res.status(500).json({ error: 'Gagal memverifikasi dokumen' });
+  }
+};
+
+/**
+ * Approve/Activate deliverer account
+ */
+exports.activateDeliverer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, rejectionReason } = req.body; // action: 'APPROVED' or 'REJECTED'
+    const adminId = req.user.id;
+
+    if (!['APPROVED', 'REJECTED', 'SUSPENDED'].includes(action)) {
+      return res.status(400).json({ error: 'Action harus APPROVED, REJECTED, atau SUSPENDED' });
+    }
+
+    const profile = await prisma.driverProfile.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        user: true,
+        documents: true
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Driver profile tidak ditemukan' });
+    }
+
+    // Validate all required documents are approved before activating
+    if (action === 'APPROVED') {
+      const hasApprovedKTP = profile.documents.some(d => d.type === 'KTP' && d.status === 'APPROVED');
+      const hasApprovedSIM = profile.documents.some(d => d.type === 'SIM' && d.status === 'APPROVED');
+      const hasApprovedFace = profile.documents.some(d => d.type === 'FACE' && d.status === 'APPROVED');
+
+      if (!hasApprovedKTP || !hasApprovedSIM || !hasApprovedFace) {
+        return res.status(400).json({ 
+          error: 'Tidak dapat mengaktifkan akun. Dokumen wajib (KTP, SIM, Foto Wajah) belum diverifikasi.',
+          requiredDocuments: {
+            KTP: hasApprovedKTP ? 'Approved' : 'Missing/Not Approved',
+            SIM: hasApprovedSIM ? 'Approved' : 'Missing/Not Approved',
+            FACE: hasApprovedFace ? 'Approved' : 'Missing/Not Approved'
+          }
+        });
+      }
+    }
+
+    // Update driver profile
+    const updatedProfile = await prisma.driverProfile.update({
+      where: { id: parseInt(id) },
+      data: {
+        verificationStatus: action,
+        isVerified: action === 'APPROVED',
+        verifiedAt: action === 'APPROVED' ? new Date() : null,
+        rejectionReason: action === 'REJECTED' ? rejectionReason : null
+      }
+    });
+
+    // Update user isActive status
+    await prisma.user.update({
+      where: { id: profile.userId },
+      data: {
+        isActive: action === 'APPROVED',
+        isVerified: action === 'APPROVED'
+      }
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        adminId,
+        action: action === 'APPROVED' ? 'APPROVE' : 'REJECT',
+        entityType: 'DRIVER_PROFILE',
+        entityId: profile.id,
+        description: JSON.stringify({
+          userId: profile.userId,
+          previousStatus: profile.verificationStatus,
+          newStatus: action,
+          rejectionReason
+        })
+      }
+    });
+
+    // TODO: Send notification to deliverer about their account status
+
+    res.json({
+      status: 'success',
+      message: action === 'APPROVED' 
+        ? 'Akun deliverer berhasil diaktifkan' 
+        : `Akun deliverer berhasil ${action === 'REJECTED' ? 'ditolak' : 'ditangguhkan'}`,
+      data: {
+        id: updatedProfile.id,
+        verificationStatus: updatedProfile.verificationStatus,
+        isVerified: updatedProfile.isVerified
+      }
+    });
+  } catch (error) {
+    console.error('Activate deliverer error:', error);
+    res.status(500).json({ error: 'Gagal mengaktifkan/menonaktifkan akun deliverer' });
+  }
+};
+
+/**
+ * Get verification statistics for dashboard
+ */
+exports.getVerificationStats = async (req, res) => {
+  try {
+    const [pending, underReview, approved, rejected, suspended] = await Promise.all([
+      prisma.driverProfile.count({ where: { verificationStatus: 'PENDING' } }),
+      prisma.driverProfile.count({ where: { verificationStatus: 'UNDER_REVIEW' } }),
+      prisma.driverProfile.count({ where: { verificationStatus: 'APPROVED' } }),
+      prisma.driverProfile.count({ where: { verificationStatus: 'REJECTED' } }),
+      prisma.driverProfile.count({ where: { verificationStatus: 'SUSPENDED' } })
+    ]);
+
+    // Get pending documents by type
+    const pendingDocs = await prisma.driverDocument.groupBy({
+      by: ['type'],
+      where: { status: 'PENDING' },
+      _count: { id: true }
+    });
+
+    const pendingDocsByType = pendingDocs.reduce((acc, doc) => {
+      acc[doc.type] = doc._count.id;
+      return acc;
+    }, {});
+
+    // Get recent verifications (last 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const recentVerifications = await prisma.driverProfile.count({
+      where: {
+        verifiedAt: { gte: weekAgo },
+        isVerified: true
+      }
+    });
+
+    res.json({
+      status: 'success',
+      data: {
+        profiles: {
+          pending,
+          underReview,
+          approved,
+          rejected,
+          suspended,
+          total: pending + underReview + approved + rejected + suspended
+        },
+        pendingDocuments: pendingDocsByType,
+        recentVerifications
+      }
+    });
+  } catch (error) {
+    console.error('Get verification stats error:', error);
+    res.status(500).json({ error: 'Gagal mengambil statistik verifikasi' });
+  }
+};
