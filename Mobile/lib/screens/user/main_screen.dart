@@ -4,7 +4,7 @@ import 'package:titipin_app/screens/user/explore_screen.dart';
 import 'package:titipin_app/screens/user/order_history_screen.dart';
 import 'package:titipin_app/screens/user/cart_screen.dart';
 import 'package:titipin_app/screens/user/user_chat_list_screen.dart';
-import 'package:titipin_app/screens/user/profile_view_screen.dart';
+import 'package:titipin_app/screens/user/settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -20,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
     ExploreScreen(), // Tab 0: Halaman utama
     OrderHistoryScreen(), // Tab 1: Riwayat Pesanan
     UserChatListScreen(), // Tab 2: Halaman daftar chat
-    ProfileViewScreen(), // Tab 3: Halaman profil
+    SettingsScreen(), // Tab 3: Halaman pengaturan
   ];
 
   void _onItemTapped(int index) {
@@ -59,7 +59,7 @@ class _MainScreenState extends State<MainScreen> {
               _buildNavItem(icon: Icons.receipt_long, index: 1),
               const SizedBox(width: 40), // Ruang kosong untuk tombol keranjang
               _buildNavItem(icon: Icons.chat_bubble_outline, index: 2),
-              _buildNavItem(icon: Icons.person_outline, index: 3),
+              _buildNavItem(icon: Icons.settings_outlined, index: 3),
             ],
           ),
         ),

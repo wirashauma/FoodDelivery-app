@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/screens/deliverer/available_orders_screen.dart';
 import 'package:titipin_app/screens/deliverer/active_orders_screen.dart';
-import 'package:titipin_app/screens/deliverer/deliverer_profile_screen.dart';
+import 'package:titipin_app/screens/deliverer/deliverer_settings_screen.dart';
 import 'package:titipin_app/screens/deliverer/deliverer_chat_list_screen.dart';
 
 class DelivererMainScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _DelivererMainScreenState extends State<DelivererMainScreen> {
     AvailableOrdersScreen(), // Tab 0: Pekerjaan tersedia
     ActiveOrdersScreen(), // Tab 1: Pekerjaan yang sedang diantar
     DelivererChatListScreen(), // Tab 2: Pesan/Chat aktif
-    DelivererProfileScreen(), // Tab 3: Halaman profil KHUSUS DELIVERER
+    DelivererSettingsScreen(), // Tab 3: Halaman pengaturan KHUSUS DELIVERER
   ];
 
   void _onItemTapped(int index) {
@@ -48,8 +48,8 @@ class _DelivererMainScreenState extends State<DelivererMainScreen> {
             label: 'Pesan',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profil',
+            icon: Icon(Icons.settings_outlined),
+            label: 'Pengaturan',
           ),
         ],
         currentIndex: _selectedIndex,

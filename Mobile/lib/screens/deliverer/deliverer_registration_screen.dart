@@ -638,8 +638,8 @@ class _DelivererRegistrationScreenState
       child: Column(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isCompleted
@@ -659,10 +659,15 @@ class _DelivererRegistrationScreenState
             ),
             child: Center(
               child: isCompleted
-                  ? const Icon(Icons.check, color: Colors.white, size: 24)
-                  : Icon(icon,
-                      color: isActive ? Colors.white : Colors.grey.shade600,
-                      size: 24),
+                  ? const Icon(Icons.check, color: Colors.white, size: 20)
+                  : Text(
+                      '${stepIndex + 1}',
+                      style: TextStyle(
+                        color: isActive ? Colors.white : Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 8),
