@@ -252,8 +252,26 @@ export const productsAPI = {
     const response = await api.post('/products', data);
     return response.data;
   },
+  // Create with file upload
+  createWithFile: async (formData: FormData) => {
+    const response = await api.post('/products', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
   update: async (id: number, data: Record<string, unknown>) => {
     const response = await api.put(`/products/${id}`, data);
+    return response.data;
+  },
+  // Update with file upload
+  updateWithFile: async (id: number, formData: FormData) => {
+    const response = await api.put(`/products/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   delete: async (id: number) => {
@@ -282,8 +300,26 @@ export const restaurantsAPI = {
     const response = await api.post('/restaurants', data);
     return response.data;
   },
+  // Create with file upload
+  createWithFile: async (formData: FormData) => {
+    const response = await api.post('/restaurants', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
   update: async (id: number, data: Record<string, unknown>) => {
     const response = await api.put(`/restaurants/${id}`, data);
+    return response.data;
+  },
+  // Update with file upload
+  updateWithFile: async (id: number, formData: FormData) => {
+    const response = await api.put(`/restaurants/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   delete: async (id: number) => {

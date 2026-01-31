@@ -16,7 +16,6 @@ import {
   X,
   CheckCircle2,
   XCircle,
-  Image as ImageIcon,
 } from 'lucide-react';
 
 // Dummy data

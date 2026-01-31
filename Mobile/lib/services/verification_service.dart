@@ -16,6 +16,10 @@ class VerificationService {
     required String address,
     required String vehicleType,
     required String vehicleNumber,
+    String? vehicleBrand,
+    String? vehicleModel,
+    String? vehicleYear,
+    String? vehicleColor,
   }) async {
     final token = await _getToken();
     if (token == null) {
@@ -29,23 +33,27 @@ class VerificationService {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'name': name,
-        'phone': phone,
-        'address': address,
         'vehicleType': vehicleType,
-        'vehicleNumber': vehicleNumber,
+        'plateNumber': vehicleNumber, // Backend expects 'plateNumber'
+        'vehicleBrand': vehicleBrand,
+        'vehicleModel': vehicleModel,
+        'vehicleYear': vehicleYear,
+        'vehicleColor': vehicleColor,
       }),
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
       final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'Gagal menyimpan informasi');
+      throw Exception(
+          error['message'] ?? error['error'] ?? 'Gagal menyimpan informasi');
     }
   }
 
-  static Future<void> uploadDocuments({
-    required String ktpPath,
-    required String simPath,
+  /// Upload a single document (KTP, SIM, NPWP, etc.)
+  static Future<void> uploadDocument({
+    required String filePath,
+    required String documentType,
+    String? documentNumber,
   }) async {
     final token = await _getToken();
     if (token == null) {
@@ -59,8 +67,16 @@ class VerificationService {
 
     request.headers['Authorization'] = 'Bearer $token';
 
-    request.files.add(await http.MultipartFile.fromPath('ktp', ktpPath));
-    request.files.add(await http.MultipartFile.fromPath('sim', simPath));
+    // Add the document file
+    request.files.add(await http.MultipartFile.fromPath('document', filePath));
+
+    // Add document type
+    request.fields['type'] = documentType.toUpperCase();
+
+    // Add document number if provided
+    if (documentNumber != null && documentNumber.isNotEmpty) {
+      request.fields['documentNumber'] = documentNumber;
+    }
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
@@ -71,6 +87,25 @@ class VerificationService {
     }
   }
 
+  /// Upload KTP and SIM documents
+  static Future<void> uploadDocuments({
+    required String ktpPath,
+    required String simPath,
+  }) async {
+    // Upload KTP
+    await uploadDocument(
+      filePath: ktpPath,
+      documentType: 'KTP',
+    );
+
+    // Upload SIM
+    await uploadDocument(
+      filePath: simPath,
+      documentType: 'SIM',
+    );
+  }
+
+  /// Upload selfie for face verification
   static Future<void> uploadSelfie({required String selfiePath}) async {
     final token = await _getToken();
     if (token == null) {

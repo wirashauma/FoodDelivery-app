@@ -48,6 +48,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   @override
+  void dispose() {
+    _pageController
+        .dispose(); // Properly dispose PageController to prevent memory leak
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.height < 600;

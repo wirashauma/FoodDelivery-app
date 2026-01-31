@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 interface SidebarContextType {
   isCollapsed: boolean;
@@ -37,20 +37,22 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleCollapsed = () => setIsCollapsed((prev: boolean) => !prev);
-  const toggleMobileMenu = () => setIsMobileMenuOpen((prev: boolean) => !prev);
-  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+  // Memoized callbacks to prevent unnecessary re-renders
+  const toggleCollapsed = useCallback(() => setIsCollapsed((prev: boolean) => !prev), []);
+  const toggleMobileMenu = useCallback(() => setIsMobileMenuOpen((prev: boolean) => !prev), []);
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+
+  // Memoized context value to prevent cascading re-renders
+  const value = useMemo(() => ({
+    isCollapsed,
+    isMobileMenuOpen,
+    toggleCollapsed,
+    toggleMobileMenu,
+    closeMobileMenu,
+  }), [isCollapsed, isMobileMenuOpen, toggleCollapsed, toggleMobileMenu, closeMobileMenu]);
 
   return (
-    <SidebarContext.Provider
-      value={{
-        isCollapsed,
-        isMobileMenuOpen,
-        toggleCollapsed,
-        toggleMobileMenu,
-        closeMobileMenu,
-      }}
-    >
+    <SidebarContext.Provider value={value}>
       {children}
     </SidebarContext.Provider>
   );

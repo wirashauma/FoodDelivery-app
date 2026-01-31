@@ -454,6 +454,43 @@ model MerchantStaff {
 }
 
 // ============================================
+// SIMPLE RESTAURANT MODEL (for Admin CRUD)
+// ============================================
+
+model Restaurant {
+  id            Int       @id @default(autoincrement())
+  nama          String    @db.VarChar(255)
+  deskripsi     String?   @db.Text
+  alamat        String    @db.Text
+  imageUrl      String?   @db.Text
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      SimpleProduct[]
+
+  @@map("restaurants")
+}
+
+model SimpleProduct {
+  id            Int         @id @default(autoincrement())
+  nama          String      @db.VarChar(255)
+  deskripsi     String      @db.Text
+  harga         Int
+  imageUrl      String      @db.Text
+  kategori      String      @db.VarChar(100)
+  isAvailable   Boolean     @default(true)
+  restaurantId  Int?
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([restaurantId])
+  @@index([kategori])
+  @@map("simple_products")
+}
+
+// ============================================
 // PRODUCT & MENU MODELS
 // ============================================
 

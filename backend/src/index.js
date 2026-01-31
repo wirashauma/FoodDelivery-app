@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors'); // Import CORS
 const http = require('http'); // Import http
+const path = require('path'); // Import path for static files
 const { Server } = require("socket.io"); // Import socket.io
 const { PrismaClient } = require('@prisma/client'); // Import Prisma
 
@@ -23,6 +24,9 @@ const io = new Server(server, { // Inisialisasi Socket.IO
 // Enable CORS for all origins
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // [NEW] Import platform detection middleware
 const { detectPlatform } = require('./middleware/platformMiddleware');

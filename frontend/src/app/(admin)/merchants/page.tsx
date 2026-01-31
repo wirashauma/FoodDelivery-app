@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Store, 
   Search, 
@@ -15,9 +15,6 @@ import {
   Star,
   MapPin,
   Phone,
-  FileText,
-  TrendingUp,
-  DollarSign,
   ShoppingBag,
 } from 'lucide-react';
 import Link from 'next/link';

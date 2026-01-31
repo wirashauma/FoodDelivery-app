@@ -5,13 +5,10 @@ import {
   DollarSign, 
   TrendingUp, 
   TrendingDown, 
-  ArrowUpRight,
   Building2,
   Truck,
   RefreshCw,
   Clock,
-  CheckCircle2,
-  XCircle,
   Download,
   Calendar,
   CreditCard,
@@ -125,7 +122,6 @@ function StatCard({
 }
 
 export default function FinancialPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [activeTab, setActiveTab] = useState<'overview' | 'merchant' | 'driver' | 'refund'>('overview');
 
   const tabs = [

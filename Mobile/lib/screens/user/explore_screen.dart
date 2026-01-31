@@ -18,6 +18,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   List<Product> _products = [];
   bool _isLoading = true;
 
+  // Pre-computed category maps for better performance
+  Map<String, List<Product>> _categoryProductsCache = {};
+
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Main dishes', 'icon': Icons.restaurant},
     {'name': 'Fast food', 'icon': Icons.fastfood},
@@ -38,8 +41,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         if (mounted) {
+          final products = data.map((json) => Product.fromJson(json)).toList();
           setState(() {
-            _products = data.map((json) => Product.fromJson(json)).toList();
+            _products = products;
+            _categoryProductsCache = _buildCategoryCache(products);
             _isLoading = false;
           });
         }
@@ -55,39 +60,49 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
+  // Pre-compute category products once when products are loaded
+  Map<String, List<Product>> _buildCategoryCache(List<Product> products) {
+    final Map<String, List<Product>> cache = {};
+
+    cache['Main dishes'] = products
+        .where((p) =>
+            p.category?.toLowerCase() == 'makanan' ||
+            p.category?.toLowerCase() == 'main' ||
+            p.category?.toLowerCase() == 'main dishes')
+        .take(8)
+        .toList();
+
+    cache['Fast food'] = products
+        .where((p) =>
+            p.category?.toLowerCase() == 'snack' ||
+            p.category?.toLowerCase() == 'fast food' ||
+            p.category?.toLowerCase() == 'fastfood')
+        .take(8)
+        .toList();
+
+    cache['Salad'] = products
+        .where((p) =>
+            p.category?.toLowerCase() == 'salad' ||
+            p.category?.toLowerCase() == 'healthy')
+        .take(8)
+        .toList();
+
+    cache['Fruit'] = products
+        .where((p) =>
+            p.category?.toLowerCase() == 'fruit' ||
+            p.category?.toLowerCase() == 'minuman')
+        .take(8)
+        .toList();
+
+    cache['default'] = products.take(8).toList();
+
+    return cache;
+  }
+
   List<Product> _getProductsByCategory(String category) {
-    if (category == 'Main dishes') {
-      return _products
-          .where((p) =>
-              p.category?.toLowerCase() == 'makanan' ||
-              p.category?.toLowerCase() == 'main' ||
-              p.category?.toLowerCase() == 'main dishes')
-          .take(8)
-          .toList();
-    } else if (category == 'Fast food') {
-      return _products
-          .where((p) =>
-              p.category?.toLowerCase() == 'snack' ||
-              p.category?.toLowerCase() == 'fast food' ||
-              p.category?.toLowerCase() == 'fastfood')
-          .take(8)
-          .toList();
-    } else if (category == 'Salad') {
-      return _products
-          .where((p) =>
-              p.category?.toLowerCase() == 'salad' ||
-              p.category?.toLowerCase() == 'healthy')
-          .take(8)
-          .toList();
-    } else if (category == 'Fruit') {
-      return _products
-          .where((p) =>
-              p.category?.toLowerCase() == 'fruit' ||
-              p.category?.toLowerCase() == 'minuman')
-          .take(8)
-          .toList();
-    }
-    return _products.take(8).toList();
+    return _categoryProductsCache[category] ??
+        _categoryProductsCache['default'] ??
+        [];
   }
 
   @override

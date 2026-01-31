@@ -14,6 +14,7 @@ class _CartScreenState extends State<CartScreen> {
   List<Map<String, dynamic>> cartItems = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  final Set<String> _pendingOperations = {}; // Track pending operations
 
   @override
   void initState() {
@@ -51,11 +52,33 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
+    // Prevent duplicate operations
+    if (_pendingOperations.contains(cartItemId)) return;
+    _pendingOperations.add(cartItemId);
+
+    // Store old state for rollback
+    final oldItems = List<Map<String, dynamic>>.from(
+      cartItems.map((item) => Map<String, dynamic>.from(item)),
+    );
+
+    // Optimistic update - update UI immediately
+    setState(() {
+      final index = cartItems.indexWhere((item) => item['id'] == cartItemId);
+      if (index != -1) {
+        cartItems[index] = Map<String, dynamic>.from(cartItems[index]);
+        cartItems[index]['quantity'] = newQuantity;
+      }
+    });
+
     try {
       await CartService.updateCartItem(cartItemId, newQuantity);
-      _loadCart();
+      // Success - keep the optimistic update
     } catch (e) {
+      // Rollback on failure
       if (mounted) {
+        setState(() {
+          cartItems = oldItems;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update: ${e.toString()}'),
@@ -63,29 +86,82 @@ class _CartScreenState extends State<CartScreen> {
           ),
         );
       }
+    } finally {
+      _pendingOperations.remove(cartItemId);
     }
   }
 
   Future<void> _removeItem(String cartItemId) async {
+    // Prevent duplicate operations
+    if (_pendingOperations.contains(cartItemId)) return;
+    _pendingOperations.add(cartItemId);
+
+    // Store old state for rollback
+    final oldItems = List<Map<String, dynamic>>.from(
+      cartItems.map((item) => Map<String, dynamic>.from(item)),
+    );
+    final removedIndex =
+        cartItems.indexWhere((item) => item['id'] == cartItemId);
+    final removedItem = removedIndex != -1 ? oldItems[removedIndex] : null;
+
+    // Optimistic update - remove from UI immediately
+    setState(() {
+      cartItems.removeWhere((item) => item['id'] == cartItemId);
+    });
+
     try {
       await CartService.removeFromCart(cartItemId);
-      _loadCart();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Item removed from cart'),
+          SnackBar(
+            content: const Text('Item removed from cart'),
             backgroundColor: AppColors.primary,
+            action: removedItem != null
+                ? SnackBarAction(
+                    label: 'Undo',
+                    textColor: AppColors.white,
+                    onPressed: () {
+                      // Re-add item if undo is pressed
+                      _undoRemove(removedItem);
+                    },
+                  )
+                : null,
           ),
         );
       }
     } catch (e) {
+      // Rollback on failure
       if (mounted) {
+        setState(() {
+          cartItems = oldItems;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to remove: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
+      }
+    } finally {
+      _pendingOperations.remove(cartItemId);
+    }
+  }
+
+  Future<void> _undoRemove(Map<String, dynamic> item) async {
+    final product = item['product'];
+    if (product != null && product['id'] != null) {
+      try {
+        await CartService.addToCart(product['id'], item['quantity'] ?? 1);
+        _loadCart(); // Refresh to get proper IDs
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to restore item: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     }
   }

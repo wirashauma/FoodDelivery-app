@@ -1395,6 +1395,12 @@ class _DelivererRegistrationScreenState
             address: _currentAddressController.text.trim(),
             vehicleType: _selectedVehicleType!.toLowerCase(),
             vehicleNumber: _vehiclePlateController.text.trim(),
+            vehicleBrand: _vehicleBrandController.text.trim().isNotEmpty
+                ? _vehicleBrandController.text.trim()
+                : null,
+            vehicleYear: _vehicleYearController.text.trim().isNotEmpty
+                ? _vehicleYearController.text.trim()
+                : null,
           );
 
           if (mounted) {

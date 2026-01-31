@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { memo } from 'react';
 
 interface StatsCardProps {
   title: string;
@@ -11,15 +12,17 @@ interface StatsCardProps {
   color?: 'primary' | 'blue' | 'green' | 'orange' | 'purple';
 }
 
+// Color classes defined outside component to prevent recreation on each render
 const colorClasses = {
   primary: 'bg-primary-50 text-primary-600',
   blue: 'bg-blue-50 text-blue-600',
   green: 'bg-green-50 text-green-600',
   orange: 'bg-orange-50 text-orange-600',
   purple: 'bg-purple-50 text-purple-600',
-};
+} as const;
 
-export default function StatsCard({
+// Memoized component to prevent unnecessary re-renders
+const StatsCard = memo(function StatsCard({
   title,
   value,
   icon: Icon,
@@ -48,4 +51,6 @@ export default function StatsCard({
       </div>
     </div>
   );
-}
+});
+
+export default StatsCard;

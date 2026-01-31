@@ -2,6 +2,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { uploadProductImage, uploadRestaurantImage } = require('../utils/supabaseStorage');
 
 // ==================== PRODUCT CRUD ====================
 
@@ -20,7 +21,7 @@ exports.getAllProducts = async (req, res) => {
       whereClause.restaurantId = parseInt(restaurantId);
     }
 
-    const products = await prisma.product.findMany({
+    const products = await prisma.simpleProduct.findMany({
       where: whereClause,
       include: {
         restaurant: {
@@ -46,7 +47,7 @@ exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const product = await prisma.product.findUnique({
+    const product = await prisma.simpleProduct.findUnique({
       where: { id: parseInt(id) },
       include: {
         restaurant: true
@@ -68,19 +69,36 @@ exports.createProduct = async (req, res) => {
   try {
     const { nama, deskripsi, harga, imageUrl, kategori, restaurantId, isAvailable } = req.body;
 
-    if (!nama || !deskripsi || !harga || !imageUrl || !kategori) {
-      return res.status(400).json({ msg: 'Semua field wajib diisi' });
+    if (!nama || !deskripsi || !harga || !kategori) {
+      return res.status(400).json({ msg: 'Nama, deskripsi, harga, dan kategori wajib diisi' });
     }
 
-    const product = await prisma.product.create({
+    // Handle image: either from file upload or URL
+    let finalImageUrl = imageUrl || '';
+    if (req.file) {
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await uploadProductImage(req.file, null);
+        finalImageUrl = uploadResult.url;
+        console.log(`Product image uploaded to: ${finalImageUrl}`);
+      } catch (uploadError) {
+        console.error('Product image upload error:', uploadError);
+        // Fallback to local URL
+        if (req.file.filename) {
+          finalImageUrl = `/uploads/products/${req.file.filename}`;
+        }
+      }
+    }
+
+    const product = await prisma.simpleProduct.create({
       data: {
         nama,
         deskripsi,
         harga: parseInt(harga),
-        imageUrl,
+        imageUrl: finalImageUrl,
         kategori,
         restaurantId: restaurantId ? parseInt(restaurantId) : null,
-        isAvailable: isAvailable !== undefined ? isAvailable : true,
+        isAvailable: isAvailable !== undefined ? (isAvailable === 'true' || isAvailable === true) : true,
       },
       include: {
         restaurant: true
@@ -99,7 +117,7 @@ exports.updateProduct = async (req, res) => {
     const { id } = req.params;
     const { nama, deskripsi, harga, imageUrl, kategori, restaurantId, isAvailable } = req.body;
 
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await prisma.simpleProduct.findUnique({
       where: { id: parseInt(id) }
     });
 
@@ -107,16 +125,35 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ msg: 'Produk tidak ditemukan' });
     }
 
-    const product = await prisma.product.update({
+    // Handle image: either from file upload or URL
+    let finalImageUrl = existingProduct.imageUrl;
+    if (req.file) {
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await uploadProductImage(req.file, parseInt(id));
+        finalImageUrl = uploadResult.url;
+        console.log(`Product image updated to: ${finalImageUrl}`);
+      } catch (uploadError) {
+        console.error('Product image upload error:', uploadError);
+        // Fallback to local URL
+        if (req.file.filename) {
+          finalImageUrl = `/uploads/products/${req.file.filename}`;
+        }
+      }
+    } else if (imageUrl !== undefined) {
+      finalImageUrl = imageUrl;
+    }
+
+    const product = await prisma.simpleProduct.update({
       where: { id: parseInt(id) },
       data: {
         nama: nama || existingProduct.nama,
         deskripsi: deskripsi || existingProduct.deskripsi,
         harga: harga ? parseInt(harga) : existingProduct.harga,
-        imageUrl: imageUrl || existingProduct.imageUrl,
+        imageUrl: finalImageUrl,
         kategori: kategori || existingProduct.kategori,
         restaurantId: restaurantId !== undefined ? (restaurantId ? parseInt(restaurantId) : null) : existingProduct.restaurantId,
-        isAvailable: isAvailable !== undefined ? isAvailable : existingProduct.isAvailable,
+        isAvailable: isAvailable !== undefined ? (isAvailable === 'true' || isAvailable === true) : existingProduct.isAvailable,
       },
       include: {
         restaurant: true
@@ -134,7 +171,7 @@ exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existingProduct = await prisma.product.findUnique({
+    const existingProduct = await prisma.simpleProduct.findUnique({
       where: { id: parseInt(id) }
     });
 
@@ -142,7 +179,7 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ msg: 'Produk tidak ditemukan' });
     }
 
-    await prisma.product.delete({
+    await prisma.simpleProduct.delete({
       where: { id: parseInt(id) }
     });
 
@@ -205,13 +242,30 @@ exports.createRestaurant = async (req, res) => {
       return res.status(400).json({ msg: 'Nama dan alamat wajib diisi' });
     }
 
+    // Handle image: either from file upload or URL
+    let finalImageUrl = imageUrl || null;
+    if (req.file) {
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await uploadRestaurantImage(req.file, null);
+        finalImageUrl = uploadResult.url;
+        console.log(`Restaurant image uploaded to: ${finalImageUrl}`);
+      } catch (uploadError) {
+        console.error('Restaurant image upload error:', uploadError);
+        // Fallback to local URL
+        if (req.file.filename) {
+          finalImageUrl = `/uploads/restaurants/${req.file.filename}`;
+        }
+      }
+    }
+
     const restaurant = await prisma.restaurant.create({
       data: {
         nama,
         deskripsi: deskripsi || null,
         alamat,
-        imageUrl: imageUrl || null,
-        isActive: isActive !== undefined ? isActive : true,
+        imageUrl: finalImageUrl,
+        isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : true,
       }
     });
 
@@ -235,14 +289,33 @@ exports.updateRestaurant = async (req, res) => {
       return res.status(404).json({ msg: 'Restaurant tidak ditemukan' });
     }
 
+    // Handle image: either from file upload or URL
+    let finalImageUrl = existingRestaurant.imageUrl;
+    if (req.file) {
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await uploadRestaurantImage(req.file, parseInt(id));
+        finalImageUrl = uploadResult.url;
+        console.log(`Restaurant image updated to: ${finalImageUrl}`);
+      } catch (uploadError) {
+        console.error('Restaurant image upload error:', uploadError);
+        // Fallback to local URL
+        if (req.file.filename) {
+          finalImageUrl = `/uploads/restaurants/${req.file.filename}`;
+        }
+      }
+    } else if (imageUrl !== undefined) {
+      finalImageUrl = imageUrl;
+    }
+
     const restaurant = await prisma.restaurant.update({
       where: { id: parseInt(id) },
       data: {
         nama: nama || existingRestaurant.nama,
         deskripsi: deskripsi !== undefined ? deskripsi : existingRestaurant.deskripsi,
         alamat: alamat || existingRestaurant.alamat,
-        imageUrl: imageUrl !== undefined ? imageUrl : existingRestaurant.imageUrl,
-        isActive: isActive !== undefined ? isActive : existingRestaurant.isActive,
+        imageUrl: finalImageUrl,
+        isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : existingRestaurant.isActive,
       }
     });
 
@@ -266,7 +339,7 @@ exports.deleteRestaurant = async (req, res) => {
     }
 
     // Set all products' restaurantId to null before deleting
-    await prisma.product.updateMany({
+    await prisma.simpleProduct.updateMany({
       where: { restaurantId: parseInt(id) },
       data: { restaurantId: null }
     });

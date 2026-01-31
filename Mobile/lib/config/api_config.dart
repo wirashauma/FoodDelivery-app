@@ -1,14 +1,20 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConfig {
-  // Environment: 'dev' or 'prod'
-  static const String environment = 'dev';
+  // Environment from .env file
+  static String get environment => dotenv.env['APP_ENVIRONMENT'] ?? 'dev';
 
-  // Base URLs
-  static const String devBaseUrl = 'http://192.168.1.18:3000/api';
-  static const String prodBaseUrl = 'https://api.titipin.com/api';
+  // Base URLs from .env file
+  static String get devBaseUrl =>
+      dotenv.env['DEV_API_BASE_URL'] ?? 'http://localhost:3000/api';
+  static String get prodBaseUrl =>
+      dotenv.env['PROD_API_BASE_URL'] ?? 'https://api.titipin.com/api';
 
-  // Socket URLs
-  static const String devSocketUrl = 'http://192.168.1.18:3000';
-  static const String prodSocketUrl = 'https://api.titipin.com';
+  // Socket URLs from .env file
+  static String get devSocketUrl =>
+      dotenv.env['DEV_SOCKET_URL'] ?? 'http://localhost:3000';
+  static String get prodSocketUrl =>
+      dotenv.env['PROD_SOCKET_URL'] ?? 'https://api.titipin.com';
 
   // Get current base URL
   static String get baseUrl => environment == 'prod' ? prodBaseUrl : devBaseUrl;
@@ -47,14 +53,14 @@ class ApiConfig {
       '$baseUrl/deliverer/dashboard';
   static String get delivererActiveOrdersEndpoint =>
       '$baseUrl/deliverer/orders/active';
-  static String get delivererStatusEndpoint => '$baseUrl/deliverer/status';
-  static String get delivererInfoEndpoint => '$baseUrl/deliverer/info';
-  static String get uploadDocumentsEndpoint => '$baseUrl/deliverer/documents';
-  static String get uploadSelfieEndpoint => '$baseUrl/deliverer/selfie';
+  static String get delivererStatusEndpoint => '$baseUrl/driver/status';
+  static String get delivererInfoEndpoint => '$baseUrl/driver/register';
+  static String get uploadDocumentsEndpoint => '$baseUrl/driver/documents';
+  static String get uploadSelfieEndpoint => '$baseUrl/driver/face-verification';
   static String get submitVerificationEndpoint =>
-      '$baseUrl/deliverer/submit-verification';
+      '$baseUrl/driver/face-verification';
   static String get verificationStatusEndpoint =>
-      '$baseUrl/deliverer/verification-status';
+      '$baseUrl/driver/verification-status';
 
   // Message endpoints
   static String get messagesEndpoint => '$baseUrl/messages';
@@ -65,6 +71,9 @@ class ApiConfig {
   // Rating endpoints
   static String get ratingsEndpoint => '$baseUrl/ratings';
 
-  // Request timeout
-  static const Duration requestTimeout = Duration(seconds: 30);
+  // Request timeout from .env file
+  static Duration get requestTimeout => Duration(
+        seconds:
+            int.tryParse(dotenv.env['REQUEST_TIMEOUT_SECONDS'] ?? '30') ?? 30,
+      );
 }

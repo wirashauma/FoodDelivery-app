@@ -4,9 +4,26 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const driverController = require('../controllers/driverController');
 const { authenticate } = require('../middleware/authMiddleware');
 const { authorize, auditLog } = require('../middleware/rbacMiddleware');
+
+// Configure multer for memory storage (for Supabase upload)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 // ==================== DRIVER ONBOARDING ====================
 
@@ -33,11 +50,12 @@ router.put(
   driverController.updateDriverProfile
 );
 
-// Upload document
+// Upload document (with file upload support)
 router.post(
   '/documents',
   authenticate,
   authorize('DELIVERER'),
+  upload.single('document'),
   driverController.uploadDocument
 );
 
@@ -110,10 +128,11 @@ router.get(
   driverController.getVerificationStatus
 );
 
-// Upload face verification
+// Upload face verification (with file upload support)
 router.post(
   '/face-verification',
   authenticate,
+  upload.single('selfie'),
   driverController.uploadFaceVerification
 );
 

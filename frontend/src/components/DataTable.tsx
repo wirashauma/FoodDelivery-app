@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useCallback, memo } from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Column<T = any> {
@@ -23,10 +23,35 @@ interface DataTableProps<T = any> {
   onSearch?: (query: string) => void;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  /** Unique key field for each row - defaults to 'id' */
+  rowKeyField?: keyof T | string;
 }
 
+// Helper function to get nested value - defined outside component
+const getValue = <T,>(item: T, key: string): ReactNode => {
+  const keys = key.split('.');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let value: any = item;
+  for (const k of keys) {
+    value = value?.[k];
+  }
+  return value as ReactNode;
+};
+
+// Helper function to get row key - defined outside component
+const getRowKey = <T,>(item: T, index: number, keyField?: keyof T | string): string => {
+  if (keyField) {
+    const key = getValue(item, keyField as string);
+    if (key != null) return String(key);
+  }
+  // Fallback to common id fields
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const record = item as any;
+  return record?.id ?? record?._id ?? record?.uuid ?? `row-${index}`;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function DataTable<T = any>({
+function DataTable<T = any>({
   columns,
   data,
   loading = false,
@@ -34,25 +59,20 @@ export default function DataTable<T = any>({
   onSearch,
   searchPlaceholder = 'Search...',
   emptyMessage = 'No data available',
+  rowKeyField,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch) {
       onSearch(searchQuery);
     }
-  };
+  }, [onSearch, searchQuery]);
 
-  const getValue = (item: T, key: string) => {
-    const keys = key.split('.');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let value: any = item;
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    return value as ReactNode;
-  };
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   return (
     <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden">
@@ -65,7 +85,7 @@ export default function DataTable<T = any>({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 placeholder={searchPlaceholder}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
               />
@@ -112,7 +132,7 @@ export default function DataTable<T = any>({
               </tr>
             ) : (
               data.map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                <tr key={getRowKey(item, index, rowKeyField)} className="hover:bg-gray-50 transition-colors">
                   {columns.map((column) => (
                     <td key={column.key as string} className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700">
                       {column.render ? column.render(item) : getValue(item, column.key as string)}
@@ -152,3 +172,6 @@ export default function DataTable<T = any>({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(DataTable) as typeof DataTable;

@@ -29,10 +29,23 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   String? _currentUserId;
 
+  // Store callback reference for proper cleanup
+  late final void Function(Message) _messageCallback;
+
   @override
   void initState() {
     super.initState();
+    _messageCallback = _handleNewMessage;
     _initChat();
+  }
+
+  void _handleNewMessage(Message message) {
+    if (message.orderId == widget.orderId && mounted) {
+      setState(() {
+        _messages.add(message);
+      });
+      _scrollToBottom();
+    }
   }
 
   Future<void> _initChat() async {
@@ -40,14 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _currentUserId = await _chatService.getCurrentUserId();
       await _chatService.connect();
 
-      _chatService.onNewMessage((message) {
-        if (message.orderId == widget.orderId && mounted) {
-          setState(() {
-            _messages.add(message);
-          });
-          _scrollToBottom();
-        }
-      });
+      _chatService.onNewMessage(_messageCallback);
 
       await _loadMessages();
     } catch (e) {
@@ -124,6 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    // Remove callback before disconnecting to prevent memory leaks
+    _chatService.removeMessageCallback(_messageCallback);
     _chatService.disconnect();
     super.dispose();
   }

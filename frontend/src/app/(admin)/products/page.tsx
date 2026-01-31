@@ -78,6 +78,10 @@ export default function ProductsPage() {
     isActive: true,
     isAvailable: true,
   });
+  
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const kategoriOptions = ['Makanan', 'Minuman', 'Snack', 'Dessert', 'Lainnya'];
 
@@ -105,6 +109,7 @@ export default function ProductsPage() {
     setModalType(type);
     setEditingItem(item || null);
     setSelectedRestaurantId(restaurantId || null);
+    setSelectedImage(null);
     
     if (item) {
       if (type === 'restaurant') {
@@ -120,6 +125,7 @@ export default function ProductsPage() {
           isActive: rest.isActive,
           isAvailable: true,
         });
+        setImagePreview(rest.imageUrl || null);
       } else {
         const prod = item as Product;
         setFormData({
@@ -133,8 +139,10 @@ export default function ProductsPage() {
           isActive: true,
           isAvailable: prod.isAvailable,
         });
+        setImagePreview(prod.imageUrl || null);
       }
     } else {
+      setImagePreview(null);
       setFormData({
         nama: '',
         deskripsi: '',
@@ -156,6 +164,21 @@ export default function ProductsPage() {
     setModalType(null);
     setEditingItem(null);
     setSelectedRestaurantId(null);
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+  
+  // Handle image file selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -163,37 +186,47 @@ export default function ProductsPage() {
     
     try {
       if (modalType === 'restaurant') {
-        const data = {
-          nama: formData.nama,
-          deskripsi: formData.deskripsi || undefined,
-          alamat: formData.alamat,
-          imageUrl: formData.imageUrl || undefined,
-          isActive: formData.isActive,
-        };
+        // Use FormData for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('nama', formData.nama);
+        if (formData.deskripsi) formDataToSend.append('deskripsi', formData.deskripsi);
+        formDataToSend.append('alamat', formData.alamat);
+        formDataToSend.append('isActive', formData.isActive.toString());
+        
+        if (selectedImage) {
+          formDataToSend.append('image', selectedImage);
+        } else if (formData.imageUrl) {
+          formDataToSend.append('imageUrl', formData.imageUrl);
+        }
         
         if (editingItem) {
-          await restaurantsAPI.update(editingItem.id, data);
+          await restaurantsAPI.updateWithFile(editingItem.id, formDataToSend);
           toast.success('Restoran berhasil diperbarui!');
         } else {
-          await restaurantsAPI.create(data);
+          await restaurantsAPI.createWithFile(formDataToSend);
           toast.success('Restoran berhasil ditambahkan!');
         }
       } else {
-        const data = {
-          nama: formData.nama,
-          deskripsi: formData.deskripsi,
-          harga: parseInt(formData.harga),
-          imageUrl: formData.imageUrl,
-          kategori: formData.kategori,
-          restaurantId: formData.restaurantId ? parseInt(formData.restaurantId) : undefined,
-          isAvailable: formData.isAvailable,
-        };
+        // Use FormData for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('nama', formData.nama);
+        formDataToSend.append('deskripsi', formData.deskripsi);
+        formDataToSend.append('harga', formData.harga);
+        formDataToSend.append('kategori', formData.kategori);
+        formDataToSend.append('isAvailable', formData.isAvailable.toString());
+        if (formData.restaurantId) formDataToSend.append('restaurantId', formData.restaurantId);
+        
+        if (selectedImage) {
+          formDataToSend.append('image', selectedImage);
+        } else if (formData.imageUrl) {
+          formDataToSend.append('imageUrl', formData.imageUrl);
+        }
         
         if (editingItem) {
-          await productsAPI.update(editingItem.id, data);
+          await productsAPI.updateWithFile(editingItem.id, formDataToSend);
           toast.success('Produk berhasil diperbarui!');
         } else {
-          await productsAPI.create(data);
+          await productsAPI.createWithFile(formDataToSend);
           toast.success('Produk berhasil ditambahkan!');
         }
       }
@@ -734,17 +767,58 @@ export default function ProductsPage() {
                 />
               </div>
 
+              {/* Image Upload Section */}
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  URL Gambar
+                  Gambar
                 </label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                />
+                <div className="space-y-3">
+                  {/* Image Preview */}
+                  {imagePreview && (
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-gray-200">
+                      <img
+                        src={imagePreview.startsWith('data:') || imagePreview.startsWith('http') ? imagePreview : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${imagePreview}`}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedImage(null);
+                          setImagePreview(null);
+                          setFormData({ ...formData, imageUrl: '' });
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* File Input */}
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                    />
+                    <span className="text-xs text-gray-400">atau gunakan URL:</span>
+                    <input
+                      type="url"
+                      value={formData.imageUrl}
+                      onChange={(e) => {
+                        setFormData({ ...formData, imageUrl: e.target.value });
+                        if (e.target.value) {
+                          setImagePreview(e.target.value);
+                          setSelectedImage(null);
+                        }
+                      }}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Restaurant-specific Fields */}

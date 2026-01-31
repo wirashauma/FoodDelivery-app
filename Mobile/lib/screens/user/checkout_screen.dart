@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/config/api_config.dart';
 import 'package:titipin_app/widgets/location_picker_widget.dart';
+import 'package:titipin_app/screens/user/payment_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -104,16 +105,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'deliveryLatitude': _selectedLatitude,
           'deliveryLongitude': _selectedLongitude,
           'deliveryAddress': _selectedAddress ?? 'Address not available',
+          'items': widget.cartItems
+              .map((item) => {
+                    'productId': item['id'],
+                    'quantity': item['quantity'],
+                    'price': item['price'],
+                  })
+              .toList(),
+          'totalAmount': _grandTotal,
         }),
       );
 
       if (response.statusCode == 201 && mounted) {
-        _showOrderSuccessDialog();
+        final orderData = jsonDecode(response.body);
+        final orderId = orderData['data']?['id']?.toString() ??
+            orderData['id']?.toString() ??
+            '';
+
+        // Navigate to payment screen
+        final navigator = Navigator.of(context);
+        final paymentResult = await navigator.push<bool>(
+          MaterialPageRoute(
+            builder: (context) => PaymentScreen(
+              orderId: orderId,
+              orderData: {
+                ...orderData['data'] ?? orderData,
+                'total': _grandTotal,
+                'totalAmount': _grandTotal,
+              },
+            ),
+          ),
+        );
+
+        if (paymentResult == true && mounted) {
+          // Payment successful, show success and go back
+          _showOrderSuccessDialog();
+        }
       } else if (mounted) {
         final error = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: ${error['error']}'),
+            content: Text(
+                'Failed: ${error['error'] ?? error['message'] ?? 'Unknown error'}'),
             backgroundColor: AppColors.error,
           ),
         );

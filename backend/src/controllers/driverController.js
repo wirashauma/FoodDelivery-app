@@ -11,6 +11,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { uploadDocument } = require('../utils/supabaseStorage');
 
 // ==================== ONBOARDING & PROFILE ====================
 
@@ -29,6 +30,23 @@ exports.registerDriver = async (req, res) => {
       vehicleColor
     } = req.body;
 
+    // Validate required fields
+    if (!vehicleType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation Error',
+        message: 'Vehicle type is required'
+      });
+    }
+
+    if (!plateNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation Error',
+        message: 'Plate number is required'
+      });
+    }
+
     // Check if user already has driver profile
     const existing = await prisma.driverProfile.findUnique({
       where: { userId }
@@ -46,11 +64,11 @@ exports.registerDriver = async (req, res) => {
       data: {
         userId,
         vehicleType,
-        vehicleBrand,
-        vehicleModel,
+        vehicleBrand: vehicleBrand || null,
+        vehicleModel: vehicleModel || null,
         plateNumber,
         vehicleYear: vehicleYear ? parseInt(vehicleYear) : null,
-        vehicleColor,
+        vehicleColor: vehicleColor || null,
         status: 'OFFLINE',
         verificationStatus: 'PENDING'
       }
@@ -62,10 +80,16 @@ exports.registerDriver = async (req, res) => {
       data: { role: 'DELIVERER' }
     });
 
-    // Create wallet for driver
-    await prisma.wallet.create({
-      data: { userId }
+    // Create wallet for driver (only if it doesn't exist)
+    const existingWallet = await prisma.wallet.findUnique({
+      where: { userId }
     });
+    
+    if (!existingWallet) {
+      await prisma.wallet.create({
+        data: { userId }
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -183,12 +207,14 @@ exports.updateDriverProfile = async (req, res) => {
 };
 
 /**
- * Upload driver document
+ * Upload driver document (KTP, SIM, NPWP, etc.)
+ * Supports both file upload (multipart) and URL-based upload
  */
 exports.uploadDocument = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { type, documentUrl, documentNumber, expiryDate, extractedData } = req.body;
+    const { type, documentNumber, expiryDate, extractedData } = req.body;
+    let documentUrl = req.body.documentUrl;
 
     const profile = await prisma.driverProfile.findUnique({
       where: { userId }
@@ -199,6 +225,30 @@ exports.uploadDocument = async (req, res) => {
         success: false,
         error: 'Not Found',
         message: 'Driver profile not found'
+      });
+    }
+
+    // Handle file upload if file is provided
+    if (req.file) {
+      try {
+        const uploadResult = await uploadDocument(req.file, type.toLowerCase(), userId);
+        documentUrl = uploadResult.url;
+        console.log(`Document uploaded to: ${documentUrl}`);
+      } catch (uploadError) {
+        console.error('File upload error:', uploadError);
+        return res.status(500).json({
+          success: false,
+          error: 'Upload Failed',
+          message: 'Failed to upload document file'
+        });
+      }
+    }
+
+    if (!documentUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Document file or URL is required'
       });
     }
 
@@ -1196,6 +1246,7 @@ exports.getVerificationStatus = async (req, res) => {
 
 /**
  * Upload face verification photo
+ * Supports both file upload (multipart) and base64 image
  */
 exports.uploadFaceVerification = async (req, res) => {
   try {
@@ -1214,9 +1265,32 @@ exports.uploadFaceVerification = async (req, res) => {
       });
     }
 
-    // In production, you would upload to cloud storage
-    // For now, we'll store a reference
-    const documentUrl = `face_${userId}_${Date.now()}.jpg`;
+    let documentUrl;
+
+    // Handle file upload if file is provided
+    if (req.file) {
+      try {
+        const uploadResult = await uploadDocument(req.file, 'face', userId);
+        documentUrl = uploadResult.url;
+        console.log(`Face photo uploaded to: ${documentUrl}`);
+      } catch (uploadError) {
+        console.error('Face upload error:', uploadError);
+        return res.status(500).json({
+          success: false,
+          error: 'Upload Failed',
+          message: 'Failed to upload face photo'
+        });
+      }
+    } else if (faceImage) {
+      // Handle base64 image (legacy support)
+      documentUrl = `face_${userId}_${Date.now()}.jpg`;
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Face photo file is required'
+      });
+    }
 
     // Check if face document exists
     const existingFace = await prisma.driverDocument.findFirst({

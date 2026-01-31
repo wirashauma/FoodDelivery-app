@@ -30,20 +30,37 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Handle image URL - if it's a relative path, prepend the base URL
+    String? imageUrl = json['imageUrl'];
+    if (imageUrl != null && imageUrl.startsWith('/uploads/')) {
+      // Get base URL without /api suffix
+      const baseUrl = 'http://192.168.1.18:3000';
+      imageUrl = '$baseUrl$imageUrl';
+    }
+
     return Product(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      imageUrl: json['imageUrl'],
-      category: json['category'],
-      storeId: json['storeId'],
-      storeName: json['storeName'] ?? json['store']?['name'],
-      storeAddress: json['storeAddress'] ?? json['store']?['address'],
+      id: (json['id'] ?? '').toString(),
+      // Support both 'name' and 'nama' field names
+      name: json['name'] ?? json['nama'] ?? '',
+      // Support both 'description' and 'deskripsi'
+      description: json['description'] ?? json['deskripsi'] ?? '',
+      // Support both 'price' and 'harga'
+      price: (json['price'] ?? json['harga'] ?? 0).toDouble(),
+      imageUrl: imageUrl,
+      // Support both 'category' and 'kategori'
+      category: json['category'] ?? json['kategori'],
+      storeId: json['storeId']?.toString() ?? json['restaurantId']?.toString(),
+      // Support restaurant relation
+      storeName: json['storeName'] ??
+          json['store']?['name'] ??
+          json['restaurant']?['nama'],
+      storeAddress: json['storeAddress'] ??
+          json['store']?['address'] ??
+          json['restaurant']?['alamat'],
       isAvailable: json['isAvailable'] ?? true,
       rating: json['rating']?.toDouble(),
       reviewCount: json['reviewCount'],
-      soldCount: json['soldCount'],
+      soldCount: json['soldCount'] ?? json['totalSold'],
     );
   }
 
