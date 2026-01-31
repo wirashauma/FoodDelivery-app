@@ -120,4 +120,25 @@ class DelivererService {
       throw Exception(error['error'] ?? 'Gagal update status');
     }
   }
+
+  static Future<Map<String, dynamic>> getDelivererProfile() async {
+    final token = await _getToken();
+    if (token == null) {
+      throw Exception('Token tidak ditemukan');
+    }
+
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/deliverer/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Gagal memuat profil deliverer');
+    }
+  }
 }

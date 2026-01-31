@@ -257,7 +257,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     // Description
                     Text(
                       widget.product.description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.grey600,
                         height: 1.6,
@@ -303,7 +303,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   if (widget.product.storeAddress != null)
                                     Text(
                                       widget.product.storeAddress!,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 13,
                                         color: AppColors.grey500,
                                       ),

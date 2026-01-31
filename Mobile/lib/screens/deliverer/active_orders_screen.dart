@@ -230,7 +230,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Ambil pesanan dari tab Tersedia',
             style: TextStyle(color: AppColors.grey500),
           ),
@@ -329,7 +329,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
                           if (user?['phone'] != null)
                             Text(
                               user['phone'],
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.grey500,
                               ),
@@ -385,7 +385,7 @@ class _ActiveOrdersScreenState extends State<ActiveOrdersScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Alamat Pengiriman',
                               style: TextStyle(
                                 fontSize: 11,

@@ -183,7 +183,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
+                const Text(
                   'Online',
                   style: TextStyle(
                     fontSize: 12,
@@ -255,7 +255,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No messages yet',
             style: TextStyle(
               fontSize: 16,
@@ -264,7 +264,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Start the conversation!',
             style: TextStyle(
               fontSize: 14,
@@ -345,11 +345,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 child: TextField(
                   controller: _messageController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Type a message...',
                     hintStyle: TextStyle(color: AppColors.grey500),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
                   ),
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _sendMessage(),
@@ -413,7 +413,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Ringing...',
                 style: TextStyle(
                   fontSize: 14,

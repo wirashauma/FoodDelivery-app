@@ -60,7 +60,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
@@ -107,12 +107,12 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: AppColors.grey300),
+                        side: const BorderSide(color: AppColors.grey300),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Batal',
                         style: TextStyle(color: AppColors.grey500),
                       ),
@@ -273,7 +273,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Tarik ke bawah untuk refresh',
             style: TextStyle(color: AppColors.grey500),
           ),
@@ -377,7 +377,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                 Expanded(
                   child: Text(
                     order['deliveryAddress'] ?? 'Alamat tidak tersedia',
-                    style: TextStyle(color: AppColors.grey500),
+                    style: const TextStyle(color: AppColors.grey500),
                   ),
                 ),
               ],
@@ -406,7 +406,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           '• ${item['product']?['name'] ?? 'Item'} x${item['quantity']}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.grey500,
                           ),
@@ -415,7 +415,7 @@ class _AvailableOrdersScreenState extends State<AvailableOrdersScreen> {
                   if (items.length > 3)
                     Text(
                       '...dan ${items.length - 3} item lainnya',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.grey500,
                         fontStyle: FontStyle.italic,

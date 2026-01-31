@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:titipin_app/config/colors.dart';
 import 'package:titipin_app/services/profile_service.dart';
 import 'package:titipin_app/screens/user/profile_complete_screen.dart';
 import 'package:titipin_app/screens/user/complaints_screen.dart';

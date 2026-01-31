@@ -142,7 +142,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.search, color: AppColors.grey500),
+                  const Icon(Icons.search, color: AppColors.grey500),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
@@ -151,12 +151,11 @@ class _SearchScreenState extends State<SearchScreen> {
                         _searchQuery = value;
                         _filterProducts();
                       },
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'What are you craving?',
                         hintStyle: TextStyle(color: AppColors.grey500),
                         border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
@@ -166,7 +165,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.tune,
                       color: AppColors.primary,
                       size: 20,
@@ -215,9 +214,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              ..._filteredProducts
-                  .map((product) => _buildProductItem(product))
-                  .toList(),
+              ..._filteredProducts.map((product) => _buildProductItem(product)),
             ],
           ],
         ),
@@ -236,7 +233,7 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColors.grey600,
@@ -343,7 +340,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '\$${product.price.toStringAsFixed(0)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.grey500,
                     ),

@@ -43,7 +43,9 @@ class _DelivererRegistrationScreenState
   final _currentPostalCodeController = TextEditingController();
   final _phoneController = TextEditingController();
 
+  // ignore: unused_field
   double? _currentLatitude;
+  // ignore: unused_field
   double? _currentLongitude;
   bool _isLocationSelected = false;
 
@@ -1245,7 +1247,7 @@ class _DelivererRegistrationScreenState
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items
           .map(
             (e) => DropdownMenuItem(

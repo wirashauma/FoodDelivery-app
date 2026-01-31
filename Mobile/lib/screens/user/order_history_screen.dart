@@ -223,7 +223,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               isActive
                   ? 'Start ordering your favorite meals!'
                   : 'Your completed orders will appear here',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.grey500,
               ),
@@ -309,13 +309,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               ],
             ),
             const SizedBox(height: 12),
-            Divider(color: AppColors.grey200),
+            const Divider(color: AppColors.grey200),
             const SizedBox(height: 12),
 
             // Items summary
             Text(
               '${order.items?.length ?? 0} items',
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.grey500,
                 fontSize: 14,
               ),
@@ -328,7 +328,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
@@ -349,7 +349,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '...and ${(order.items?.length ?? 0) - 2} more items',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.grey400,
                     fontStyle: FontStyle.italic,
@@ -372,7 +372,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 ),
                 Text(
                   _formatDate(order.createdAt),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.grey400,
                   ),

@@ -128,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    const Text(
                       'Delicious food at your doorstep',
                       style: TextStyle(
                         fontSize: 16,

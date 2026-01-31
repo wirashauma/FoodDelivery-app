@@ -27,7 +27,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isProcessing = false;
 
   // Payment method
-  String _selectedPaymentMethod = 'card';
+  // ignore: unused_field
+  final String _selectedPaymentMethod = 'card';
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _cardNameController = TextEditingController();
   final TextEditingController _expiryController = TextEditingController();
@@ -168,7 +169,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'Rate our rider\'s delivery',
                 style: TextStyle(
                   fontSize: 14,
@@ -196,7 +197,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Leave feedback...',
-                  hintStyle: TextStyle(color: AppColors.grey400),
+                  hintStyle: const TextStyle(color: AppColors.grey400),
                   filled: true,
                   fillColor: AppColors.grey100,
                   border: OutlineInputBorder(
@@ -508,7 +509,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             color: AppColors.grey600,
           ),
@@ -519,7 +520,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.grey400),
+            hintStyle: const TextStyle(color: AppColors.grey400),
             filled: true,
             fillColor: AppColors.grey100,
             contentPadding:
@@ -540,7 +541,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             color: AppColors.grey600,
           ),

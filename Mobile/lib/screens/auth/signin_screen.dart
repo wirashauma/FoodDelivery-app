@@ -27,6 +27,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _storage = const FlutterSecureStorage();
 
   // Quick login accounts (same as frontend)
+  // ignore: unused_field
   static const _quickLogins = [
     {
       'email': 'wira@gmail.com',

@@ -1,7 +1,5 @@
 import 'package:titipin_app/models/product_model.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
-import 'package:titipin_app/config/api_config.dart';
 import 'dart:convert';
 
 class FavoritesService {

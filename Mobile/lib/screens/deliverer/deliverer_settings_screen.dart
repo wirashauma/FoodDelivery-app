@@ -353,7 +353,7 @@ class _DelivererSettingsScreenState extends State<DelivererSettingsScreen> {
               Container(
                 width: 70,
                 height: 70,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: _primaryLight,
                   shape: BoxShape.circle,
                 ),

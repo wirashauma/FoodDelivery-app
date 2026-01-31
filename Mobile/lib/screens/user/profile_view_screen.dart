@@ -54,7 +54,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: AppColors.grey600),
             ),
@@ -210,7 +210,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           // Email
           Text(
             _profile?['email'] ?? '',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               color: AppColors.grey500,
             ),
@@ -221,7 +221,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             const SizedBox(height: 4),
             Text(
               _profile!['phone'],
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.grey500,
               ),
@@ -250,11 +250,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             color: AppColors.warning,
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Complete your profile',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -459,7 +459,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   }
 
   Widget _buildDivider() {
-    return Divider(
+    return const Divider(
       height: 1,
       indent: 70,
       endIndent: 20,

@@ -137,7 +137,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Chat akan muncul setelah\nAnda menerima pesanan',
             style: TextStyle(color: AppColors.grey500),
             textAlign: TextAlign.center,
@@ -233,7 +233,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
                       if (lastMessage != null)
                         Text(
                           _formatTime(DateTime.parse(lastMessage['createdAt'])),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.grey500,
                           ),
@@ -245,7 +245,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
                     lastMessage?['content'] ?? 'Belum ada pesan',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.grey500,
                       fontSize: 13,
                     ),
@@ -260,7 +260,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
                     ),
                     child: Text(
                       'Order #${order?['id']?.substring(0, 8) ?? ''}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 10,
                         color: AppColors.primary,
                         fontWeight: FontWeight.w500,
@@ -273,7 +273,7 @@ class _DelivererChatListScreenState extends State<DelivererChatListScreen> {
 
             // Arrow
             const SizedBox(width: 8),
-            Icon(
+            const Icon(
               Icons.chevron_right,
               color: AppColors.grey500,
             ),

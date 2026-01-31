@@ -115,16 +115,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     ),
 
                     // Categories with products
-                    ..._categories
-                        .expand((category) => [
-                              SliverToBoxAdapter(
-                                child: _buildCategoryHeader(category['name']),
-                              ),
-                              SliverToBoxAdapter(
-                                child: _buildCategoryGrid(category['name']),
-                              ),
-                            ])
-                        .toList(),
+                    ..._categories.expand((category) => [
+                          SliverToBoxAdapter(
+                            child: _buildCategoryHeader(category['name']),
+                          ),
+                          SliverToBoxAdapter(
+                            child: _buildCategoryGrid(category['name']),
+                          ),
+                        ]),
 
                     const SliverToBoxAdapter(
                       child: SizedBox(height: 100),
@@ -217,12 +215,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.search,
                     color: AppColors.grey500,
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'What are you craving?',
                     style: TextStyle(
                       color: AppColors.grey500,
@@ -236,7 +234,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.tune,
                       color: AppColors.primary,
                       size: 20,
@@ -334,7 +332,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               color: AppColors.textPrimary,
             ),
           ),
-          Text(
+          const Text(
             'View more',
             style: TextStyle(
               fontSize: 14,
@@ -472,7 +470,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    product.name ?? 'Product',
+                    product.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -480,8 +478,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'Rp ${(double.tryParse(product.price?.toString() ?? '0') ?? 0).toStringAsFixed(0)}',
-                    style: TextStyle(color: AppColors.grey600),
+                    'Rp ${(double.tryParse(product.price.toString()) ?? 0).toStringAsFixed(0)}',
+                    style: const TextStyle(color: AppColors.grey600),
                   ),
                 ],
               ),

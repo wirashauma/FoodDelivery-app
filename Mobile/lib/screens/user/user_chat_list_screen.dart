@@ -124,7 +124,7 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Messages will appear after placing an order',
             style: TextStyle(
               fontSize: 14,
@@ -242,7 +242,7 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
                       if (lastMessage != null)
                         Text(
                           _formatTime(DateTime.parse(lastMessage['createdAt'])),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.grey400,
                           ),
@@ -254,7 +254,7 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
                     lastMessage?['content'] ?? 'Your order is received!',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.grey500,
                     ),

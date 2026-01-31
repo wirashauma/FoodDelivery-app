@@ -289,7 +289,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -297,7 +297,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           ),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.grey500,
             ),
@@ -321,18 +321,18 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.history,
                   size: 40,
                   color: AppColors.grey500,
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'Belum ada aktivitas',
                 style: TextStyle(
                   color: AppColors.grey500,
@@ -398,7 +398,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
                 const SizedBox(height: 2),
                 Text(
                   activity['description'] ?? '',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.grey500,
                   ),
@@ -408,7 +408,7 @@ class _DelivererDashboardScreenState extends State<DelivererDashboardScreen> {
           ),
           Text(
             _formatTime(activity['time']),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               color: AppColors.grey500,
             ),

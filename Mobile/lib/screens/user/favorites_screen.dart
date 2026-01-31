@@ -114,7 +114,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Start adding your favorite meals!',
             style: TextStyle(
               fontSize: 14,

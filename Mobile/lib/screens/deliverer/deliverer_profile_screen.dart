@@ -108,7 +108,7 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Apakah Anda yakin ingin keluar?',
                 style: TextStyle(color: AppColors.grey500),
                 textAlign: TextAlign.center,
@@ -121,12 +121,12 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: AppColors.grey300),
+                        side: const BorderSide(color: AppColors.grey300),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Batal',
                         style: TextStyle(color: AppColors.grey500),
                       ),
@@ -390,7 +390,7 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
                   Switch(
                     value: _isOnline,
                     onChanged: (_) => _toggleOnlineStatus(),
-                    activeColor: Colors.greenAccent,
+                    activeThumbColor: Colors.greenAccent,
                     activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
                   ),
                 ],
@@ -443,7 +443,7 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.grey500,
             ),
@@ -502,7 +502,7 @@ class _DelivererProfileScreenState extends State<DelivererProfileScreen> {
                 ),
               ),
             ),
-            Icon(
+            const Icon(
               Icons.chevron_right,
               color: AppColors.grey500,
             ),

@@ -197,7 +197,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Start adding your favorite meals!',
             style: TextStyle(
               fontSize: 14,
@@ -287,7 +287,7 @@ class _CartScreenState extends State<CartScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '\$${price.toStringAsFixed(0)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.grey500,
                   ),
@@ -304,7 +304,7 @@ class _CartScreenState extends State<CartScreen> {
                 onTap: () => _removeItem(item['id']),
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  child: Icon(
+                  child: const Icon(
                     Icons.close,
                     color: AppColors.primary,
                     size: 18,
