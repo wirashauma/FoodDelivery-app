@@ -13,7 +13,7 @@ function generateTicketNumber() {
 const createComplaint = async (req, res) => {
   try {
     const { subject, description, category, orderId, priority } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!subject || !description) {
       return res.status(400).json({ error: 'Subject and description are required' });
@@ -56,7 +56,7 @@ const createComplaint = async (req, res) => {
 // Get user's own complaints
 const getMyComplaints = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const complaints = await prisma.complaint.findMany({
       where: { userId: userId },
@@ -87,7 +87,7 @@ const getMyComplaints = async (req, res) => {
 const getComplaintById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const userRole = req.user.role;
 
     const complaint = await prisma.complaint.findUnique({
@@ -251,7 +251,7 @@ const addResponse = async (req, res) => {
   try {
     const { id } = req.params;
     const { message, isInternal } = req.body;
-    const adminId = req.user.userId;
+    const adminId = req.user.id;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });

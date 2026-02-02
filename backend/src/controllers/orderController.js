@@ -3,25 +3,44 @@ const prisma = new PrismaClient();
 
 exports.createOrder = async (req, res) => {
   try {
-    const { itemId, quantity, destination } = req.body;
-    const userId = req.user.id; 
+    const { merchantId, items, addressId, deliveryAddress, deliveryLatitude, deliveryLongitude, paymentMethod, deliveryNotes } = req.body;
+    const customerId = req.user.id; 
 
-    if (!itemId || !quantity || !destination) {
+    if (!merchantId || !items || !deliveryAddress) {
       return res.status(400).json({ error: 'Data tidak lengkap' });
     }
 
-    const newOrder = await prisma.orders.create({
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Calculate totals (simplified)
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = 10000; // Default delivery fee
+    const serviceFee = Math.round(subtotal * 0.05); // 5% service fee
+    const totalAmount = subtotal + deliveryFee + serviceFee;
+
+    const newOrder = await prisma.order.create({
       data: {
-        item_id: itemId,
-        quantity: quantity,
-        destination: destination,
-        user_id: userId, 
-        status: 'WAITING_FOR_OFFERS',
+        orderNumber,
+        customerId,
+        merchantId: parseInt(merchantId),
+        addressId: addressId ? parseInt(addressId) : null,
+        deliveryAddress,
+        deliveryLatitude: deliveryLatitude || 0,
+        deliveryLongitude: deliveryLongitude || 0,
+        deliveryNotes,
+        subtotal,
+        deliveryFee,
+        serviceFee,
+        totalAmount,
+        paymentMethod: paymentMethod || 'CASH',
+        status: 'PENDING',
       },
       select: {
         id: true,
+        orderNumber: true,
         status: true,
-        destination: true,
+        totalAmount: true,
       }
     });
 
@@ -32,106 +51,165 @@ exports.createOrder = async (req, res) => {
     });
     
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal membuat pesanan' });
+    console.error('createOrder error:', error);
+    res.status(500).json({ error: 'Gagal membuat pesanan', details: error.message });
   }
 };
 
 exports.getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const customerId = req.user.id;
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
-        user_id: userId
+        customerId: customerId
       },
       include: {
-        offers: {
+        merchant: {
           select: {
             id: true,
-            fee: true
+            businessName: true,
           }
-        } 
+        },
+        items: {
+          select: {
+            id: true,
+            productName: true,
+            quantity: true,
+            unitPrice: true,
+          }
+        }
       },
       orderBy: {
-        created_at: 'desc'
+        createdAt: 'desc'
       }
     });
 
-    res.json(orders);
+    res.json({ data: orders });
     
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil riwayat pesanan' });
+    console.error('getMyOrders error:', error);
+    res.status(500).json({ error: 'Gagal mengambil riwayat pesanan', details: error.message });
   }
 };
 
 exports.getAvailableOrders = async (req, res) => {
   try {
-    if (req.user.role !== 'DELIVERER') {
-      return res.status(403).json({ error: 'Akses ditolak. Hanya untuk deliverer.' });
-    }
-    
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
-        status: 'WAITING_FOR_OFFERS',
-        NOT: {
-          user_id: delivererId 
-        }
+        status: 'READY_FOR_PICKUP',
+        driverId: null, // No driver assigned yet
       },
       include: {
-        user: {
+        customer: {
           select: {
-            nama: true,
-            foto_profil: true
+            id: true,
+            fullName: true,
+            profilePicture: true
+          }
+        },
+        merchant: {
+          select: {
+            id: true,
+            businessName: true,
+            address: true,
+            latitude: true,
+            longitude: true,
           }
         }
       },
       orderBy: {
-        created_at: 'desc'
+        createdAt: 'desc'
       }
     });
 
-    res.json(orders);
+    // Transform to frontend format
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      order_number: order.orderNumber,
+      status: order.status,
+      delivery_address: order.deliveryAddress,
+      delivery_latitude: order.deliveryLatitude,
+      delivery_longitude: order.deliveryLongitude,
+      total_amount: order.totalAmount,
+      delivery_fee: order.deliveryFee,
+      customer: order.customer ? {
+        nama: order.customer.fullName,
+        foto_profil: order.customer.profilePicture
+      } : null,
+      merchant: order.merchant ? {
+        nama: order.merchant.businessName,
+        alamat: order.merchant.address,
+      } : null,
+      created_at: order.createdAt
+    }));
+
+    res.json({ data: formattedOrders });
     
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil pesanan yang tersedia' });
+    console.error('getAvailableOrders error:', error);
+    res.status(500).json({ error: 'Gagal mengambil pesanan yang tersedia', details: error.message });
   }
 };
 
 exports.getMyActiveJobs = async (req, res) => {
   try {
-    if (req.user.role !== 'DELIVERER') {
-      return res.status(403).json({ error: 'Akses ditolak.' });
-    }
-    
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: {
-          in: ['OFFER_ACCEPTED', 'ON_DELIVERY']
+          in: ['DRIVER_ASSIGNED', 'DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION']
         }
       },
       include: {
-        user: {
-          select: { nama: true }
+        customer: {
+          select: { 
+            id: true,
+            fullName: true,
+            phone: true
+          }
+        },
+        merchant: {
+          select: {
+            id: true,
+            businessName: true,
+            address: true,
+          }
         }
       },
       orderBy: {
-        created_at: 'desc'
+        createdAt: 'desc'
       }
     });
 
-    res.json(orders);
+    // Transform to frontend format
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      order_number: order.orderNumber,
+      status: order.status,
+      delivery_address: order.deliveryAddress,
+      total_amount: order.totalAmount,
+      delivery_fee: order.deliveryFee,
+      customer: order.customer ? {
+        nama: order.customer.fullName,
+        no_hp: order.customer.phone
+      } : null,
+      merchant: order.merchant ? {
+        nama: order.merchant.businessName,
+        alamat: order.merchant.address,
+      } : null,
+      created_at: order.createdAt
+    }));
+
+    res.json({ data: formattedOrders });
     
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil pekerjaan aktif' });
+    console.error('getMyActiveJobs error:', error);
+    res.status(500).json({ error: 'Gagal mengambil pekerjaan aktif', details: error.message });
   }
 };
 
@@ -141,18 +219,20 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(403).json({ error: 'Akses ditolak.' });
     }
 
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status || !['ON_DELIVERY', 'COMPLETED'].includes(status)) {
+    // Valid status transitions for deliverer
+    const validStatuses = ['DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION', 'DELIVERED', 'COMPLETED'];
+    if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Status tidak valid.' });
     }
     
-    const order = await prisma.orders.findFirst({
+    const order = await prisma.order.findFirst({
       where: {
         id: parseInt(id),
-        deliverer_id: delivererId,
+        driverId: driverId,
       }
     });
 
@@ -160,7 +240,7 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(404).json({ error: 'Pesanan tidak ditemukan atau bukan milik Anda.' });
     }
 
-    const updatedOrder = await prisma.orders.update({
+    const updatedOrder = await prisma.order.update({
       where: {
         id: parseInt(id),
       },
@@ -172,8 +252,8 @@ exports.updateOrderStatus = async (req, res) => {
     res.json({ msg: 'Status berhasil diperbarui', order: updatedOrder });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal memperbarui status' });
+    console.error('updateOrderStatus error:', error);
+    res.status(500).json({ error: 'Gagal memperbarui status', details: error.message });
   }
 };
 
@@ -183,10 +263,10 @@ exports.getOrderOffers = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id; 
 
-    const order = await prisma.orders.findFirst({
+    const order = await prisma.order.findFirst({
       where: {
         id: parseInt(id),
-        user_id: userId,
+        customerId: userId,
       },
     });
 
@@ -196,27 +276,27 @@ exports.getOrderOffers = async (req, res) => {
         .json({ error: 'Pesanan tidak ditemukan atau bukan milik Anda.' });
     }
 
-    const offers = await prisma.offer.findMany({
+    const offers = await prisma.driverOffer.findMany({
       where: {
-        order_id: parseInt(id),
+        orderId: parseInt(id),
       },
       include: {
-        deliverer: {
+        driver: {
           select: {
-            nama: true,
-            foto_profil: true,
+            fullName: true,
+            profilePicture: true,
           },
         },
       },
       orderBy: {
-        fee: 'asc',
+        proposedFee: 'asc',
       },
     });
 
     res.json(offers);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil daftar tawaran.' });
+    console.error('getOrderOffers error:', error);
+    res.status(500).json({ error: 'Gagal mengambil daftar tawaran.', details: error.message });
   }
 };
 
@@ -229,9 +309,9 @@ exports.getOrderOffers = async (req, res) => {
 exports.acceptOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
     
-    const order = await prisma.orders.findUnique({
+    const order = await prisma.order.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -239,20 +319,20 @@ exports.acceptOrder = async (req, res) => {
       return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
     }
 
-    if (order.status !== 'WAITING_FOR_OFFERS' && order.status !== 'ASSIGNED') {
+    // Valid statuses for accepting an order
+    if (!['READY_FOR_PICKUP', 'CONFIRMED'].includes(order.status)) {
       return res.status(400).json({ 
         error: 'Pesanan tidak dapat diterima dalam status saat ini',
         currentStatus: order.status
       });
     }
 
-    // Update order status and assign deliverer
-    const updatedOrder = await prisma.orders.update({
+    // Update order status and assign driver
+    const updatedOrder = await prisma.order.update({
       where: { id: parseInt(id) },
       data: {
-        deliverer_id: delivererId,
-        status: 'ACCEPTED_BY_DELIVERER',
-        accepted_at: new Date(),
+        driverId: driverId,
+        status: 'DRIVER_ASSIGNED',
       },
     });
 
@@ -262,8 +342,8 @@ exports.acceptOrder = async (req, res) => {
       data: updatedOrder,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal menerima pesanan' });
+    console.error('acceptOrder error:', error);
+    res.status(500).json({ error: 'Gagal menerima pesanan', details: error.message });
   }
 };
 
@@ -275,9 +355,8 @@ exports.rejectOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const delivererId = req.user.id;
     
-    const order = await prisma.orders.findUnique({
+    const order = await prisma.order.findUnique({
       where: { id: parseInt(id) },
     });
 
@@ -285,20 +364,20 @@ exports.rejectOrder = async (req, res) => {
       return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
     }
 
-    if (order.status !== 'WAITING_FOR_OFFERS' && order.status !== 'ASSIGNED') {
+    if (!['READY_FOR_PICKUP', 'DRIVER_ASSIGNED'].includes(order.status)) {
       return res.status(400).json({ 
         error: 'Pesanan tidak dapat ditolak dalam status saat ini',
         currentStatus: order.status
       });
     }
 
-    // Update order status back to waiting
-    const updatedOrder = await prisma.orders.update({
+    // Update order status back to ready for pickup and unassign driver
+    const updatedOrder = await prisma.order.update({
       where: { id: parseInt(id) },
       data: {
-        status: 'WAITING_FOR_OFFERS',
-        rejected_by_deliverer: true,
-        rejection_reason: reason || null,
+        status: 'READY_FOR_PICKUP',
+        driverId: null,
+        cancellationReason: reason || null,
       },
     });
 
@@ -308,8 +387,8 @@ exports.rejectOrder = async (req, res) => {
       data: updatedOrder,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal menolak pesanan' });
+    console.error('rejectOrder error:', error);
+    res.status(500).json({ error: 'Gagal menolak pesanan', details: error.message });
   }
 };
 
@@ -319,37 +398,38 @@ exports.rejectOrder = async (req, res) => {
  */
 exports.getDelivererDashboardStats = async (req, res) => {
   try {
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
 
     // Get various counts
-    const newOrders = await prisma.orders.count({
+    const newOrders = await prisma.order.count({
       where: {
-        status: 'WAITING_FOR_OFFERS',
+        status: 'READY_FOR_PICKUP',
+        driverId: null,
       },
     });
 
-    const activeOrders = await prisma.orders.count({
+    const activeOrders = await prisma.order.count({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: {
-          in: ['ACCEPTED_BY_DELIVERER', 'IN_PROGRESS', 'ON_WAY'],
+          in: ['DRIVER_ASSIGNED', 'DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION'],
         },
       },
     });
 
-    const completedThisMonth = await prisma.orders.count({
+    const completedThisMonth = await prisma.order.count({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: 'COMPLETED',
-        created_at: {
+        createdAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         },
       },
     });
 
-    const totalCompleted = await prisma.orders.count({
+    const totalCompleted = await prisma.order.count({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: 'COMPLETED',
       },
     });
@@ -365,8 +445,8 @@ exports.getDelivererDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil statistik dashboard' });
+    console.error('getDelivererDashboardStats error:', error);
+    res.status(500).json({ error: 'Gagal mengambil statistik dashboard', details: error.message });
   }
 };
 
@@ -376,33 +456,33 @@ exports.getDelivererDashboardStats = async (req, res) => {
  */
 exports.getDelivererActiveOrders = async (req, res) => {
   try {
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: {
-          in: ['ACCEPTED_BY_DELIVERER', 'IN_PROGRESS', 'ON_WAY'],
+          in: ['DRIVER_ASSIGNED', 'DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION'],
         },
       },
       include: {
-        user: {
+        customer: {
           select: {
-            nama: true,
+            fullName: true,
             email: true,
-            no_hp: true,
+            phone: true,
           },
         },
         items: {
           select: {
             id: true,
-            nama: true,
+            productName: true,
             quantity: true,
           },
         },
       },
       orderBy: {
-        created_at: 'desc',
+        createdAt: 'desc',
       },
     });
 
@@ -411,8 +491,8 @@ exports.getDelivererActiveOrders = async (req, res) => {
       data: orders,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil pesanan aktif' });
+    console.error('getDelivererActiveOrders error:', error);
+    res.status(500).json({ error: 'Gagal mengambil pesanan aktif', details: error.message });
   }
 };
 
@@ -422,32 +502,32 @@ exports.getDelivererActiveOrders = async (req, res) => {
  */
 exports.getDelivererCompletedOrders = async (req, res) => {
   try {
-    const delivererId = req.user.id;
+    const driverId = req.user.id;
     const { limit = 20, offset = 0 } = req.query;
 
-    const orders = await prisma.orders.findMany({
+    const orders = await prisma.order.findMany({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: 'COMPLETED',
       },
       include: {
-        user: {
+        customer: {
           select: {
-            nama: true,
+            fullName: true,
             email: true,
           },
         },
       },
       orderBy: {
-        created_at: 'desc',
+        createdAt: 'desc',
       },
       take: parseInt(limit),
       skip: parseInt(offset),
     });
 
-    const total = await prisma.orders.count({
+    const total = await prisma.order.count({
       where: {
-        deliverer_id: delivererId,
+        driverId: driverId,
         status: 'COMPLETED',
       },
     });
@@ -462,8 +542,8 @@ exports.getDelivererCompletedOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil pesanan yang sudah selesai' });
+    console.error('getDelivererCompletedOrders error:', error);
+    res.status(500).json({ error: 'Gagal mengambil pesanan yang sudah selesai', details: error.message });
   }
 };
 
@@ -477,7 +557,7 @@ exports.cancelOrder = async (req, res) => {
     const userId = req.user.id;
     const { reason } = req.body;
 
-    const order = await prisma.orders.findUnique({
+    const order = await prisma.order.findUnique({
       where: { id: parseInt(orderId) },
     });
 
@@ -485,13 +565,13 @@ exports.cancelOrder = async (req, res) => {
       return res.status(404).json({ error: 'Pesanan tidak ditemukan' });
     }
 
-    // Only owner can cancel
-    if (order.user_id !== userId) {
+    // Only customer (owner) can cancel
+    if (order.customerId !== userId) {
       return res.status(403).json({ error: 'Anda tidak memiliki akses untuk membatalkan pesanan ini' });
     }
 
     // Can only cancel if not completed or already cancelled
-    if (order.status === 'COMPLETED') {
+    if (order.status === 'COMPLETED' || order.status === 'DELIVERED') {
       return res.status(400).json({ error: 'Pesanan yang sudah selesai tidak dapat dibatalkan' });
     }
 
@@ -499,18 +579,20 @@ exports.cancelOrder = async (req, res) => {
       return res.status(400).json({ error: 'Pesanan sudah dibatalkan' });
     }
 
-    // Can only cancel if ON_DELIVERY hasn't started (for now, allow but with warning)
-    const updatedOrder = await prisma.orders.update({
+    const updatedOrder = await prisma.order.update({
       where: { id: parseInt(orderId) },
       data: { 
         status: 'CANCELLED',
+        cancelledAt: new Date(),
+        cancelledBy: userId,
+        cancellationReason: reason || null,
       },
       include: {
-        user: {
-          select: { nama: true, email: true }
+        customer: {
+          select: { fullName: true, email: true }
         },
-        deliverer: {
-          select: { nama: true, email: true }
+        driver: {
+          select: { fullName: true, email: true }
         }
       }
     });
@@ -521,7 +603,7 @@ exports.cancelOrder = async (req, res) => {
       data: updatedOrder
     });
   } catch (error) {
-    console.error('Cancel order error:', error);
-    res.status(500).json({ error: 'Gagal membatalkan pesanan' });
+    console.error('cancelOrder error:', error);
+    res.status(500).json({ error: 'Gagal membatalkan pesanan', details: error.message });
   }
 };

@@ -5,12 +5,12 @@ const authMiddleware = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
 // Customer order routes
-router.post('/', authMiddleware.verifyToken, authorize('USER'), orderController.createOrder);
-router.get('/my-history', authMiddleware.verifyToken, authorize('USER'), orderController.getMyOrders);
-router.get('/my-active-jobs', authMiddleware.verifyToken, authorize('USER'), orderController.getMyActiveJobs);
+router.post('/', authMiddleware.verifyToken, authorize('CUSTOMER'), orderController.createOrder);
+router.get('/my-history', authMiddleware.verifyToken, authorize('CUSTOMER'), orderController.getMyOrders);
+router.get('/my-active-jobs', authMiddleware.verifyToken, authorize('DELIVERER'), orderController.getMyActiveJobs);
 router.post('/:id/update-status', authMiddleware.verifyToken, orderController.updateOrderStatus);
 router.get('/:id/offers', authMiddleware.verifyToken, orderController.getOrderOffers);
-router.post('/:id/cancel', authMiddleware.verifyToken, authorize('USER'), orderController.cancelOrder);
+router.post('/:id/cancel', authMiddleware.verifyToken, authorize('CUSTOMER'), orderController.cancelOrder);
 
 // [NEW] Deliverer-specific routes
 router.get('/available', authMiddleware.verifyToken, authorize('DELIVERER'), orderController.getAvailableOrders);

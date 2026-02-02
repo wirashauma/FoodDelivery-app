@@ -6,48 +6,80 @@ exports.getChatList = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    let whereClause = {
-      status: {
-        in: ['OFFER_ACCEPTED', 'ON_DELIVERY']
-      }
-    };
+    // Build where clause based on user role
+    let whereClause = {};
 
-    if (userRole === 'USER') {
-      whereClause.user_id = userId;
+    if (userRole === 'CUSTOMER') {
+      // Get chat rooms for orders where user is the customer
+      whereClause = {
+        order: {
+          customerId: userId,
+          status: {
+            in: ['DRIVER_ASSIGNED', 'DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION']
+          }
+        }
+      };
+    } else if (userRole === 'DELIVERER') {
+      // Get chat rooms for orders where user is the driver
+      whereClause = {
+        order: {
+          driverId: userId,
+          status: {
+            in: ['DRIVER_ASSIGNED', 'DRIVER_AT_MERCHANT', 'PICKED_UP', 'ON_DELIVERY', 'DRIVER_AT_LOCATION']
+          }
+        }
+      };
     } else {
-      whereClause.deliverer_id = userId;
+      return res.json({ data: [] });
     }
 
-    const orders = await prisma.orders.findMany({
+    const chatRooms = await prisma.chatRoom.findMany({
       where: whereClause,
       include: {
-        user: { select: { user_id: true, nama: true } },
-        deliverer: { select: { user_id: true, nama: true } },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            customer: { select: { id: true, fullName: true, profilePicture: true } },
+            driver: { select: { id: true, fullName: true, profilePicture: true } },
+          }
+        },
         messages: {
-          orderBy: { created_at: 'desc' },
+          orderBy: { createdAt: 'desc' },
           take: 1
         }
       },
-      orderBy: { created_at: 'desc' }
+      orderBy: { updatedAt: 'desc' }
     });
     
     // Transform to chat format for frontend
-    const chats = orders.map(order => ({
-      id: order.id, // Using order id as chat id
-      customer_id: order.user_id,
-      driver_id: order.deliverer_id,
-      order_id: order.id,
-      customer: order.user ? { nama: order.user.nama } : null,
-      driver: order.deliverer ? { nama: order.deliverer.nama } : null,
-      order: { item_id: order.item_id },
-      lastMessage: order.messages[0] || null
+    const chats = chatRooms.map(room => ({
+      id: room.id,
+      customer_id: room.order?.customer?.id,
+      driver_id: room.order?.driver?.id,
+      order_id: room.orderId,
+      order_number: room.order?.orderNumber,
+      customer: room.order?.customer ? { 
+        nama: room.order.customer.fullName,
+        foto_profil: room.order.customer.profilePicture
+      } : null,
+      driver: room.order?.driver ? { 
+        nama: room.order.driver.fullName,
+        foto_profil: room.order.driver.profilePicture
+      } : null,
+      lastMessage: room.messages[0] ? {
+        id: room.messages[0].id,
+        message: room.messages[0].message,
+        created_at: room.messages[0].createdAt
+      } : null,
+      updated_at: room.updatedAt
     }));
     
     res.json({ data: chats });
 
   } catch (error) {
     console.error("getChatList error:", error);
-    res.status(500).json({ error: 'Gagal mengambil daftar chat' });
+    res.status(500).json({ error: 'Gagal mengambil daftar chat', details: error.message });
   }
 };
 
@@ -56,98 +88,121 @@ exports.getMessages = async (req, res) => {
     const { chatId } = req.params;
     const userId = req.user.id;
 
-    // Chat ID is the order ID in this system
-    const order = await prisma.orders.findFirst({
+    // Verify user has access to this chat room
+    const chatRoom = await prisma.chatRoom.findFirst({
       where: {
         id: parseInt(chatId),
-        OR: [
-          { user_id: userId },
-          { deliverer_id: userId }
-        ]
+        order: {
+          OR: [
+            { customerId: userId },
+            { driverId: userId }
+          ]
+        }
       }
     });
 
-    if (!order) {
+    if (!chatRoom) {
       return res.status(403).json({ error: 'Akses ditolak untuk chat ini.' });
     }
 
-    const messages = await prisma.message.findMany({
+    const messages = await prisma.chatMessage.findMany({
       where: {
-        order_id: parseInt(chatId)
+        roomId: parseInt(chatId)
       },
       include: {
         sender: {
-          select: { user_id: true, nama: true }
+          select: { id: true, fullName: true, profilePicture: true }
         }
       },
       orderBy: {
-        created_at: 'asc' // Show oldest first for chat view
+        createdAt: 'asc' // Show oldest first for chat view
       }
     });
 
     // Transform to frontend format
     const formattedMessages = messages.map(msg => ({
       id: msg.id,
-      chat_id: msg.order_id,
-      sender_id: msg.sender_id,
-      message: msg.content,
-      created_at: msg.created_at
+      chat_id: msg.roomId,
+      sender_id: msg.senderId,
+      sender: {
+        nama: msg.sender?.fullName,
+        foto_profil: msg.sender?.profilePicture
+      },
+      message: msg.message,
+      message_type: msg.messageType,
+      is_read: msg.isRead,
+      created_at: msg.createdAt
     }));
 
     res.json({ data: formattedMessages });
 
   } catch (error) {
     console.error("getMessages error:", error);
-    res.status(500).json({ error: 'Gagal mengambil pesan' });
+    res.status(500).json({ error: 'Gagal mengambil pesan', details: error.message });
   }
 };
 
 exports.sendMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { message } = req.body;
+    const { message, messageType = 'text' } = req.body;
     const userId = req.user.id;
 
-    // Verify user has access to this chat (order)
-    const order = await prisma.orders.findFirst({
+    // Verify user has access to this chat room
+    const chatRoom = await prisma.chatRoom.findFirst({
       where: {
         id: parseInt(chatId),
-        OR: [
-          { user_id: userId },
-          { deliverer_id: userId }
-        ]
+        order: {
+          OR: [
+            { customerId: userId },
+            { driverId: userId }
+          ]
+        }
       }
     });
 
-    if (!order) {
+    if (!chatRoom) {
       return res.status(403).json({ error: 'Akses ditolak untuk chat ini.' });
     }
 
-    const newMessage = await prisma.message.create({
+    const newMessage = await prisma.chatMessage.create({
       data: {
-        order_id: parseInt(chatId),
-        sender_id: userId,
-        content: message
+        roomId: parseInt(chatId),
+        senderId: userId,
+        message: message,
+        messageType: messageType
       },
       include: {
         sender: {
-          select: { user_id: true, nama: true }
+          select: { id: true, fullName: true, profilePicture: true }
         }
       }
+    });
+
+    // Update chat room's updatedAt timestamp
+    await prisma.chatRoom.update({
+      where: { id: parseInt(chatId) },
+      data: { updatedAt: new Date() }
     });
 
     res.json({
       data: {
         id: newMessage.id,
-        chat_id: newMessage.order_id,
-        sender_id: newMessage.sender_id,
-        message: newMessage.content,
-        created_at: newMessage.created_at
+        chat_id: newMessage.roomId,
+        sender_id: newMessage.senderId,
+        sender: {
+          nama: newMessage.sender?.fullName,
+          foto_profil: newMessage.sender?.profilePicture
+        },
+        message: newMessage.message,
+        message_type: newMessage.messageType,
+        is_read: newMessage.isRead,
+        created_at: newMessage.createdAt
       }
     });
 
   } catch (error) {
     console.error("sendMessage error:", error);
-    res.status(500).json({ error: 'Gagal mengirim pesan' });
+    res.status(500).json({ error: 'Gagal mengirim pesan', details: error.message });
   }
 };
