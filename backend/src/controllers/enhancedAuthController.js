@@ -13,11 +13,12 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { config } = require('../lib/config');
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'supersecretrefreshkey';
+const JWT_SECRET = config.jwt.secret;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || config.jwt.secret + '_refresh';
 
 // ==================== OTP AUTHENTICATION ====================
 

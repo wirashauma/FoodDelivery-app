@@ -30,11 +30,18 @@ import {
   UtensilsCrossed,
   Tag,
   Cog,
+  Package,
+  CreditCard,
+  BarChart3,
+  Shield,
+  Headphones,
 } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useSidebar } from '@/contexts/SidebarContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
+import { UserRole, ROLE_DISPLAY_NAMES, ROLE_COLORS, canAccessPath } from '@/lib/rbac';
 
 // Menu Groups for professional admin panel
 interface MenuItem {
@@ -43,19 +50,23 @@ interface MenuItem {
   icon: React.ElementType;
   badge?: number;
   children?: MenuItem[];
+  allowedRoles?: UserRole[];
 }
 
 interface MenuGroup {
   title: string;
   items: MenuItem[];
+  allowedRoles?: UserRole[];
 }
 
-const menuGroups: MenuGroup[] = [
+// Full menu structure with role restrictions
+const getMenuGroups = (): MenuGroup[] => [
   {
     title: 'Dashboard',
     items: [
       { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF', 'FINANCE_STAFF', 'CUSTOMER_SERVICE'],
   },
   {
     title: 'Operasional',
@@ -63,6 +74,7 @@ const menuGroups: MenuGroup[] = [
       { 
         name: 'OMS', 
         icon: ClipboardList,
+        allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF', 'CUSTOMER_SERVICE'],
         children: [
           { name: 'Live Monitor', href: '/oms', icon: TrendingUp },
           { name: 'Semua Pesanan', href: '/orders', icon: ShoppingBag },
@@ -71,6 +83,7 @@ const menuGroups: MenuGroup[] = [
       { 
         name: 'Merchant', 
         icon: Building2,
+        allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF'],
         children: [
           { name: 'Daftar Merchant', href: '/merchants', icon: Store },
           { name: 'Verifikasi', href: '/merchants?filter=pending', icon: ClipboardList },
@@ -79,12 +92,14 @@ const menuGroups: MenuGroup[] = [
       { 
         name: 'Driver', 
         icon: Truck,
+        allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF'],
         children: [
           { name: 'Daftar Driver', href: '/deliverers', icon: Bike },
           { name: 'Verifikasi', href: '/deliverers/verification', icon: ClipboardList },
         ]
       },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF', 'CUSTOMER_SERVICE'],
   },
   {
     title: 'Marketing',
@@ -99,6 +114,7 @@ const menuGroups: MenuGroup[] = [
         ]
       },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF'],
   },
   {
     title: 'Keuangan',
@@ -115,6 +131,7 @@ const menuGroups: MenuGroup[] = [
       },
       { name: 'Pendapatan', href: '/earnings', icon: DollarSign },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_STAFF'],
   },
   {
     title: 'Master Data',
@@ -130,18 +147,52 @@ const menuGroups: MenuGroup[] = [
         ]
       },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
-    title: 'Pengguna',
+    title: 'Pengguna & Support',
     items: [
-      { name: 'Users', href: '/users', icon: Users },
-      { name: 'Keluhan', href: '/complaints', icon: MessageSquare, badge: 3 },
+      { name: 'Users', href: '/users', icon: Users, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'] },
+      { name: 'Keluhan', href: '/complaints', icon: MessageSquare, badge: 3, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE', 'OPERATIONS_STAFF'] },
     ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE', 'OPERATIONS_STAFF'],
   },
   {
     title: 'Pengaturan',
     items: [
       { name: 'Pengaturan', href: '/settings', icon: Settings },
+    ],
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+];
+
+// Merchant-specific menu
+const getMerchantMenuGroups = (): MenuGroup[] => [
+  {
+    title: 'Dashboard',
+    items: [
+      { name: 'Overview', href: '/merchant/dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'Toko Saya',
+    items: [
+      { name: 'Profil Toko', href: '/merchant/profile', icon: Store },
+      { name: 'Produk', href: '/merchant/products', icon: Package },
+    ],
+  },
+  {
+    title: 'Pesanan',
+    items: [
+      { name: 'Pesanan Masuk', href: '/merchant/orders', icon: ShoppingBag },
+      { name: 'Riwayat', href: '/merchant/orders/history', icon: ClipboardList },
+    ],
+  },
+  {
+    title: 'Keuangan',
+    items: [
+      { name: 'Pendapatan', href: '/merchant/earnings', icon: DollarSign },
+      { name: 'Payout', href: '/merchant/payouts', icon: CreditCard },
     ],
   },
 ];
@@ -156,6 +207,34 @@ export default function Sidebar() {
   const router = useRouter();
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useSidebar();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    const role = Cookies.get('userRole') as UserRole | undefined;
+    setUserRole(role || null);
+  }, []);
+
+  // Get menu groups based on user role
+  const menuGroups = userRole === 'MERCHANT' ? getMerchantMenuGroups() : getMenuGroups();
+
+  // Filter menu groups and items based on user role
+  const filteredMenuGroups = menuGroups
+    .filter(group => {
+      if (!group.allowedRoles) return true;
+      if (!userRole) return false;
+      if (userRole === 'SUPER_ADMIN') return true;
+      return group.allowedRoles.includes(userRole);
+    })
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        if (!item.allowedRoles) return true;
+        if (!userRole) return false;
+        if (userRole === 'SUPER_ADMIN') return true;
+        return item.allowedRoles.includes(userRole);
+      })
+    }))
+    .filter(group => group.items.length > 0);
 
   // Build current full URL path with query params for comparison
   const currentFullPath = searchParams.toString() 
@@ -359,7 +438,7 @@ export default function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 overflow-y-auto">
-            {menuGroups.map((group, groupIndex) => (
+            {filteredMenuGroups.map((group, groupIndex) => (
               <div key={group.title} className={groupIndex > 0 ? 'mt-4' : ''}>
                 <p className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                   {group.title}
@@ -406,6 +485,15 @@ export default function Sidebar() {
 
           {/* User Profile & Logout */}
           <div className="p-3 border-t border-gray-100">
+            {/* Role Badge */}
+            {userRole && (
+              <div className="mb-3 px-3">
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${ROLE_COLORS[userRole] || 'bg-gray-100 text-gray-800'}`}>
+                  <Shield size={12} />
+                  {ROLE_DISPLAY_NAMES[userRole] || userRole}
+                </div>
+              </div>
+            )}
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all group"

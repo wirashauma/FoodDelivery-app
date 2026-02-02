@@ -1,5 +1,6 @@
 // src/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const { config } = require('../lib/config');
 
 /**
  * [ENHANCED] Verify JWT Token with Platform Support
@@ -17,7 +18,7 @@ exports.verifyToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Format token salah' });
 
-  jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey', (err, decodedPayload) => {
+  jwt.verify(token, config.jwt.secret, (err, decodedPayload) => {
     if (err) {
       console.error('Token verification failed:', err.message);
       return res.status(403).json({ error: 'Token tidak valid' });
@@ -68,7 +69,7 @@ exports.optionalAuthenticate = (req, res, next) => {
     return next();
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkey', (err, decodedPayload) => {
+  jwt.verify(token, config.jwt.secret, (err, decodedPayload) => {
     if (err) {
       // Invalid token - continue as guest
       req.user = null;
@@ -103,7 +104,7 @@ exports.generateToken = (user, platform = 'web', expiresIn = '7d') => {
     iat: Math.floor(Date.now() / 1000), // Issued at
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET || 'supersecretjwtkey', {
+  return jwt.sign(payload, config.jwt.secret, {
     expiresIn: expiresIn,
   });
 };

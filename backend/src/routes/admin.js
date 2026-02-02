@@ -5,32 +5,37 @@ const adminController = require('../controllers/adminController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
-// All admin routes require authentication and ADMIN role
-const adminAuth = [authMiddleware.verifyToken, authorize('ADMIN')];
+// All admin routes require authentication and admin-level role
+// SECURITY FIX: Include SUPER_ADMIN who should have access to all admin features
+// Note: FINANCE_STAFF gets specific access to financial/earnings endpoints below
+const adminAuth = [authMiddleware.verifyToken, authorize('ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF')];
 
-// Dashboard Statistics
-router.get('/dashboard/stats', adminAuth, adminController.getDashboardStats);
-router.get('/dashboard/top-deliverers', adminAuth, adminController.getTopDeliverers);
+// Finance-specific routes that FINANCE_STAFF can access
+const financeAuth = [authMiddleware.verifyToken, authorize('ADMIN', 'SUPER_ADMIN', 'FINANCE_STAFF', 'OPERATIONS_STAFF')];
+
+// Dashboard Statistics - Allow FINANCE_STAFF for financial oversight
+router.get('/dashboard/stats', financeAuth, adminController.getDashboardStats);
+router.get('/dashboard/top-deliverers', financeAuth, adminController.getTopDeliverers);
 
 // Notifications
 router.get('/notifications', adminAuth, adminController.getNotifications);
 
-// User Management
-router.get('/users', adminAuth, adminController.getAllUsers);
-router.get('/users/:id', adminAuth, adminController.getUserById);
+// User Management - Allow FINANCE_STAFF to view users for financial reporting
+router.get('/users', financeAuth, adminController.getAllUsers);
+router.get('/users/:id', financeAuth, adminController.getUserById);
 router.put('/users/:id', adminAuth, adminController.updateUser);
 router.delete('/users/:id', adminAuth, adminController.deleteUser);
 router.put('/users/:id/status', adminAuth, adminController.toggleUserStatus);
 
-// Deliverer Management
-router.get('/deliverers', adminAuth, adminController.getAllDeliverers);
-router.get('/deliverers/overview', adminAuth, adminController.getDeliverersOverview);
+// Deliverer Management - Allow FINANCE_STAFF to view deliverers for financial reporting
+router.get('/deliverers', financeAuth, adminController.getAllDeliverers);
+router.get('/deliverers/overview', financeAuth, adminController.getDeliverersOverview);
 router.post('/deliverers/register', adminAuth, adminController.registerDeliverer);
-router.get('/deliverers/:id', adminAuth, adminController.getDelivererById);
+router.get('/deliverers/:id', financeAuth, adminController.getDelivererById);
 router.put('/deliverers/:id', adminAuth, adminController.updateDeliverer);
 router.delete('/deliverers/:id', adminAuth, adminController.deleteDeliverer);
-router.get('/deliverers/:id/stats', adminAuth, adminController.getDelivererStats);
-router.get('/deliverers/:id/performance', adminAuth, adminController.getDelivererPerformance);
+router.get('/deliverers/:id/stats', financeAuth, adminController.getDelivererStats);
+router.get('/deliverers/:id/performance', financeAuth, adminController.getDelivererPerformance);
 router.put('/deliverers/:id/status', adminAuth, adminController.toggleDelivererStatus);
 
 // Deliverer Verification Management
@@ -40,17 +45,17 @@ router.get('/verification/:id', adminAuth, adminController.getVerificationDetail
 router.put('/verification/:id/activate', adminAuth, adminController.activateDeliverer);
 router.put('/documents/:id/verify', adminAuth, adminController.verifyDocument);
 
-// Order Management
-router.get('/orders', adminAuth, adminController.getAllOrders);
-router.get('/orders/:id', adminAuth, adminController.getOrderById);
+// Order Management - Allow FINANCE_STAFF to view orders for financial reporting
+router.get('/orders', financeAuth, adminController.getAllOrders);
+router.get('/orders/:id', financeAuth, adminController.getOrderById);
 router.put('/orders/:id/status', adminAuth, adminController.updateOrderStatus);
-router.get('/orders/status/:status', adminAuth, adminController.getOrdersByStatus);
+router.get('/orders/status/:status', financeAuth, adminController.getOrdersByStatus);
 
-// Revenue & Earnings Reports
-router.get('/earnings/summary', adminAuth, adminController.getEarningsSummary);
-router.get('/earnings/deliverers', adminAuth, adminController.getDelivererEarnings);
-router.get('/earnings/daily', adminAuth, adminController.getDailyEarnings);
-router.get('/earnings/monthly', adminAuth, adminController.getMonthlyEarnings);
+// Revenue & Earnings Reports - Allow FINANCE_STAFF access
+router.get('/earnings/summary', financeAuth, adminController.getEarningsSummary);
+router.get('/earnings/deliverers', financeAuth, adminController.getDelivererEarnings);
+router.get('/earnings/daily', financeAuth, adminController.getDailyEarnings);
+router.get('/earnings/monthly', financeAuth, adminController.getMonthlyEarnings);
 
 // Reports
 router.get('/reports/users', adminAuth, adminController.getUsersReport);

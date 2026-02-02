@@ -199,6 +199,8 @@ export default function DeliverersPage() {
   }, []);
   
   const fetchPerformance = async (delivererId: number) => {
+    // Skip if no valid ID
+    if (!delivererId || delivererId === undefined) return null;
     if (performanceCache[delivererId]) return performanceCache[delivererId];
     
     try {
@@ -219,7 +221,11 @@ export default function DeliverersPage() {
   
   // Fetch performance for visible deliverers
   useEffect(() => {
-    deliverers.forEach(d => fetchPerformance(d.deliverer_id));
+    deliverers.forEach(d => {
+      if (d.deliverer_id) {
+        fetchPerformance(d.deliverer_id);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deliverers]);
   
@@ -319,7 +325,11 @@ export default function DeliverersPage() {
     try {
       setExporting(true);
       toast.loading('Mengekspor data...', { id: 'export' });
-      const blob = await exportAPI.deliverers();
+      const response = await exportAPI.deliverers();
+      
+      // Ensure we have valid blob data
+      const blob = response instanceof Blob ? response : new Blob([JSON.stringify(response)], { type: 'text/csv' });
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -604,7 +614,7 @@ export default function DeliverersPage() {
                         {perf.badges.length > 0 && (
                           <div className="flex gap-1 sm:gap-2 mt-1 sm:mt-2 flex-wrap">
                             {perf.badges.map((badge, i) => (
-                              <BadgeTag key={i} type={badge} />
+                              <BadgeTag key={`badge-${deliverer.deliverer_id}-${badge}-${i}`} type={badge} />
                             ))}
                           </div>
                         )}
@@ -775,7 +785,7 @@ export default function DeliverersPage() {
               {deliverers.slice(0, 5).map((deliverer, index) => {
                 const perf = getDelivererPerformance(deliverer);
                 return (
-                  <div key={deliverer.deliverer_id} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-colors">
+                  <div key={`top-performer-${deliverer.deliverer_id}-${index}`} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-colors">
                     <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shrink-0 ${
                       index === 0 ? 'bg-yellow-500' :
                       index === 1 ? 'bg-gray-400' :

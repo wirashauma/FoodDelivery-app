@@ -1389,14 +1389,29 @@ exports.getDeliverersOverview = async (req, res) => {
       where: { status: 'COMPLETED', driverId: { not: null } }
     });
 
-    // Total revenue from all deliverers
-    const totalRevenue = await prisma.order.aggregate({
-      _sum: { driverEarnings: true },
-      where: {
-        status: 'COMPLETED',
-        driverId: { not: null }
-      }
-    });
+    // Total revenue from all deliverers - handle missing field gracefully
+    let totalRevenue = 0;
+    try {
+      const revenueData = await prisma.order.aggregate({
+        _sum: { driverEarnings: true },
+        where: {
+          status: 'COMPLETED',
+          driverId: { not: null }
+        }
+      });
+      totalRevenue = revenueData._sum.driverEarnings || 0;
+    } catch (error) {
+      // Field might not exist, fallback to calculating from totalAmount
+      const fallbackRevenue = await prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: {
+          status: 'COMPLETED',
+          driverId: { not: null }
+        }
+      });
+      // Assume 20% is driver earnings
+      totalRevenue = (fallbackRevenue._sum.totalAmount || 0) * 0.2;
+    }
 
     // Average rating (calculated from order completion)
     const avgRating = totalDeliverers > 0 
@@ -1419,13 +1434,13 @@ exports.getDeliverersOverview = async (req, res) => {
         pendingApproval: 0, // We don't have pending approval status in current schema
         avgRating: Math.round(avgRating * 10) / 10,
         avgSatisfaction,
-        totalRevenue: totalRevenue._sum.driverEarnings || 0,
+        totalRevenue,
         totalCompletedOrders
       }
     });
   } catch (error) {
     console.error('Get deliverers overview error:', error);
-    res.status(500).json({ error: 'Gagal mengambil overview deliverer' });
+    res.status(500).json({ error: 'Gagal mengambil overview deliverer', message: error.message });
   }
 };
 

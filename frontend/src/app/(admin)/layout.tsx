@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
+import { UserRole, isAdminRole, canAccessPath, ROLE_DISPLAY_NAMES } from '@/lib/rbac';
 
 // Page title mapping - supports both pathname and pathname with query params
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
@@ -52,6 +53,14 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   
   // Legacy routes
   '/products': { title: 'Produk', subtitle: 'Kelola restoran dan menu makanan' },
+  
+  // Merchant Pages
+  '/merchant/dashboard': { title: 'Dashboard Merchant', subtitle: 'Ringkasan toko dan statistik' },
+  '/merchant/profile': { title: 'Profil Toko', subtitle: 'Kelola informasi toko Anda' },
+  '/merchant/products': { title: 'Produk Saya', subtitle: 'Kelola menu dan produk' },
+  '/merchant/orders': { title: 'Pesanan', subtitle: 'Kelola pesanan masuk' },
+  '/merchant/earnings': { title: 'Pendapatan', subtitle: 'Lihat laporan pendapatan' },
+  '/merchant/payouts': { title: 'Pencairan', subtitle: 'Ajukan pencairan dana' },
 };
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -59,15 +68,51 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const { isCollapsed } = useSidebar();
   
-  const isAuthenticated = useMemo(() => {
+  // Check authentication and role access
+  const authInfo = useMemo(() => {
     const adminToken = Cookies.get('adminToken');
     const authToken = Cookies.get('authToken');
-    const userRole = Cookies.get('userRole');
-    return !!adminToken || (!!authToken && userRole === 'ADMIN');
+    const userRole = Cookies.get('userRole') as UserRole | undefined;
+    
+    // Must have either adminToken or authToken
+    if (!adminToken && !authToken) {
+      return { isAuthenticated: false, hasAccess: false, role: undefined };
+    }
+    
+    // Check if user has admin-level role
+    const hasAdminAccess = isAdminRole(userRole);
+    
+    return { 
+      isAuthenticated: true, 
+      hasAccess: hasAdminAccess,
+      role: userRole 
+    };
   }, []);
 
-  if (!isAuthenticated) {
+  // Redirect if not authenticated
+  if (!authInfo.isAuthenticated) {
     redirect('/auth');
+  }
+
+  // Redirect if doesn't have admin access
+  if (!authInfo.hasAccess) {
+    // Redirect non-admin roles to their appropriate pages
+    const role = authInfo.role;
+    if (role === 'CUSTOMER') {
+      redirect('/user');
+    } else if (role === 'DELIVERER') {
+      redirect('/deliverer');
+    }
+    redirect('/auth');
+  }
+
+  // Check if user can access the current path
+  const queryString = searchParams.toString();
+  const fullPath = queryString ? `${pathname}?${queryString}` : pathname;
+  
+  if (!canAccessPath(authInfo.role, pathname)) {
+    // Redirect to dashboard if trying to access unauthorized page
+    redirect('/dashboard');
   }
 
   const pageInfo = useMemo(() => {

@@ -7,13 +7,13 @@ const fs = require('fs');
 const path = require('path');
 
 // Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://nupnrmgaexhjugmtdacn.supabase.co';
+const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 let supabase = null;
 
 const getSupabaseClient = () => {
-  if (!supabase && supabaseServiceKey) {
+  if (!supabase && supabaseUrl && supabaseServiceKey) {
     supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,

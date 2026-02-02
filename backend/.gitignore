@@ -2,4 +2,17 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Prisma generated files
 /src/generated/prisma
+/generated/prisma
+
+# Uploaded files (should be in cloud storage in production)
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

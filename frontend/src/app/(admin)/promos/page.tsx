@@ -370,7 +370,7 @@ export default function PromosPage() {
           {dummyBanners.map((banner) => (
             <div key={banner.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               {/* Banner Preview */}
-              <div className="aspect-[16/9] bg-gradient-to-r from-primary-500 to-purple-500 relative">
+              <div className="aspect-video bg-linear-to-r from-primary-500 to-purple-500 relative">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <ImageIcon className="text-white/50" size={48} />
                 </div>
@@ -426,7 +426,7 @@ export default function PromosPage() {
       {activeTab === 'vouchers' && (
         <div className="space-y-4">
           {/* Generate Vouchers Card */}
-          <div className="bg-gradient-to-r from-primary-500 to-purple-500 rounded-xl p-6 text-white">
+          <div className="bg-linear-to-r from-primary-500 to-purple-500 rounded-xl p-6 text-white">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h3 className="font-semibold text-lg">Generate Voucher Codes</h3>

@@ -3,11 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
+const { config } = require('../lib/config');
 const prisma = new PrismaClient();
 
 // Token configuration
-const ACCESS_TOKEN_EXPIRY = '15m';  // 15 minutes
-const REFRESH_TOKEN_EXPIRY = '7d';  // 7 days
+const ACCESS_TOKEN_EXPIRY = config.jwt.accessTokenExpiry;
+const REFRESH_TOKEN_EXPIRY = config.jwt.refreshTokenExpiry;
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 // Helper function to generate tokens
@@ -24,7 +25,7 @@ const generateAccessToken = (user, platform = 'web') => {
   
   return jwt.sign(
     payload,
-    process.env.JWT_SECRET || 'supersecretjwtkey',
+    config.jwt.secret,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 };
@@ -118,11 +119,13 @@ exports.register = async (req, res) => {
     if (role && role.trim()) {
       const normalizedRole = role.trim().toUpperCase();
       
-      if (!VALID_ROLES.includes(normalizedRole)) {
+      // SECURITY: Only allow public registration roles
+      // Admin roles must be created by existing admins
+      if (!PUBLIC_REGISTRATION_ROLES.includes(normalizedRole)) {
         return res.status(400).json({ 
           error: 'invalid_role',
-          message: 'Tipe akun tidak valid',
-          fields: { role: 'Pilih tipe akun yang tersedia' }
+          message: 'Tipe akun tidak valid untuk registrasi publik',
+          fields: { role: 'Pilih: Customer, Deliverer, atau Merchant' }
         });
       }
       userRole = normalizedRole;

@@ -218,7 +218,7 @@ function DocumentCard({
 
         {/* Document Preview */}
         <div
-          className="relative aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden mb-3 cursor-pointer"
+          className="relative aspect-4/3 bg-gray-200 rounded-lg overflow-hidden mb-3 cursor-pointer"
           onClick={() => setShowImage(true)}
         >
           {doc.documentUrl ? (
@@ -714,7 +714,7 @@ export default function VerificationPage() {
           <div className="space-y-6">
             {/* Profile Info */}
             <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+              <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
                 {selectedProfile.user.profilePicture ? (
                   <img
                     src={selectedProfile.user.profilePicture}

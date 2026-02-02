@@ -3,26 +3,59 @@ const dotenv = require('dotenv');
 const cors = require('cors'); // Import CORS
 const http = require('http'); // Import http
 const path = require('path'); // Import path for static files
+const jwt = require('jsonwebtoken'); // Import jwt for socket auth
 const { Server } = require("socket.io"); // Import socket.io
 const { PrismaClient } = require('@prisma/client'); // Import Prisma
 
 dotenv.config();
+
+// Validate environment on startup
+const { config, validateEnv } = require('./lib/config');
+validateEnv();
+
 const prisma = new PrismaClient(); // Inisialisasi Prisma
 
 const app = express();
-const port = 3000;
+const port = config.server.port;
 
 const server = http.createServer(app); // Buat server HTTP
 
+// CORS Configuration - SECURITY FIX: Don't use wildcard in production
+const corsOptions = {
+  origin: config.server.isProduction 
+    ? config.cors.allowedOrigins 
+    : '*', // Allow all in development for easier testing
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true,
+};
+
 const io = new Server(server, { // Inisialisasi Socket.IO
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"]
+  cors: corsOptions
+});
+
+// SECURITY: Socket.IO Authentication Middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+  
+  if (!token) {
+    // Allow connection but mark as unauthenticated (for public rooms like tracking)
+    socket.user = null;
+    return next();
+  }
+  
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret);
+    socket.user = decoded.user;
+    next();
+  } catch (err) {
+    console.warn('Socket authentication failed:', err.message);
+    socket.user = null;
+    next(); // Still allow connection but without auth
   }
 });
 
 // Enable CORS for all origins
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files from uploads directory
@@ -80,6 +113,12 @@ app.use('/api/oms', omsRoutes);
 // Financial Operations (Payouts, Refunds, Wallet)
 app.use('/api/financial', financialRoutes);
 
+// Payouts shortcut (redirect to /financial/payouts for frontend compatibility)
+app.use('/api/payouts', (req, res, next) => {
+  req.url = '/payouts' + req.url;
+  financialRoutes(req, res, next);
+});
+
 // Promotions & Vouchers
 app.use('/api/promo', promoRoutes);
 
@@ -107,16 +146,44 @@ app.get('/', (req, res) => {
 
 // ==================== SOCKET.IO REAL-TIME EVENTS ====================
 io.on('connection', (socket) => {
-  console.log(`🔌 User connected: ${socket.id}`);
+  console.log(`🔌 User connected: ${socket.id} (authenticated: ${!!socket.user})`);
 
-  // Join chat room
-  socket.on('join_room', (roomId) => {
+  // Helper function to check authentication
+  const requireAuth = (callback) => {
+    if (!socket.user) {
+      socket.emit('error', { message: 'Authentication required' });
+      return false;
+    }
+    return true;
+  };
+
+  // Helper function to check specific role
+  const requireRole = (roles) => {
+    if (!socket.user) {
+      socket.emit('error', { message: 'Authentication required' });
+      return false;
+    }
+    const userRole = socket.user.role;
+    if (!roles.includes(userRole)) {
+      socket.emit('error', { message: 'Insufficient permissions' });
+      return false;
+    }
+    return true;
+  };
+
+  // Join chat room - SECURITY: Validate user has access to this room
+  socket.on('join_room', async (roomId) => {
+    if (!requireAuth()) return;
+    
+    // TODO: Verify user is participant of this chat room
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    console.log(`User ${socket.user.id} joined room ${roomId}`);
   });
 
   // Join order tracking room (for customers tracking their orders)
-  socket.on('join_order', (orderId) => {
+  socket.on('join_order', async (orderId) => {
+    // Allow unauthenticated tracking for now (public tracking link feature)
+    // In production, consider validating order ownership
     socket.join(`order_${orderId}`);
     console.log(`User ${socket.id} tracking order ${orderId}`);
   });
@@ -126,28 +193,50 @@ io.on('connection', (socket) => {
     socket.leave(`order_${orderId}`);
   });
 
-  // Join driver room (for receiving available orders)
+  // Join driver room (for receiving available orders) - SECURITY: Validate driver role
   socket.on('driver_online', (driverId) => {
+    if (!requireRole(['DELIVERER'])) return;
+    
+    // SECURITY: Verify the driverId matches the authenticated user
+    if (socket.user.id !== parseInt(driverId)) {
+      socket.emit('error', { message: 'Cannot impersonate another driver' });
+      return;
+    }
+    
     socket.join('drivers_available');
     socket.join(`driver_${driverId}`);
     console.log(`Driver ${driverId} is now online`);
   });
 
-  // Driver goes offline
+  // Driver goes offline - SECURITY: Validate driver identity
   socket.on('driver_offline', (driverId) => {
+    if (!requireAuth()) return;
+    if (socket.user.id !== parseInt(driverId)) return;
+    
     socket.leave('drivers_available');
     socket.leave(`driver_${driverId}`);
   });
 
-  // Join merchant room (for receiving new orders)
-  socket.on('merchant_online', (merchantId) => {
+  // Join merchant room (for receiving new orders) - SECURITY: Validate merchant role
+  socket.on('merchant_online', async (merchantId) => {
+    if (!requireRole(['MERCHANT'])) return;
+    
+    // TODO: Verify merchantId belongs to this user
     socket.join(`merchant_${merchantId}`);
     console.log(`Merchant ${merchantId} is now online`);
   });
 
-  // Driver location update
+  // Driver location update - SECURITY: Validate driver can only update their own location
   socket.on('driver_location', async (data) => {
     // data = { orderId, driverId, latitude, longitude }
+    if (!requireRole(['DELIVERER'])) return;
+    
+    // SECURITY: Driver can only update their own location
+    if (socket.user.id !== parseInt(data.driverId)) {
+      socket.emit('error', { message: 'Cannot update location for another driver' });
+      return;
+    }
+    
     try {
       // Update driver location in database
       await prisma.driverProfile.updateMany({
@@ -173,8 +262,18 @@ io.on('connection', (socket) => {
   });
 
   // Order status update (broadcast to relevant parties)
+  // Order status update (broadcast to relevant parties) - SECURITY: Validate permissions
   socket.on('order_status_update', (data) => {
     // data = { orderId, status, customerId, merchantId, driverId }
+    // Only authenticated users with appropriate roles can update status
+    if (!requireAuth()) return;
+    
+    const allowedRoles = ['MERCHANT', 'DELIVERER', 'ADMIN', 'SUPER_ADMIN', 'OPERATIONS_STAFF'];
+    if (!allowedRoles.includes(socket.user.role)) {
+      socket.emit('error', { message: 'Cannot update order status' });
+      return;
+    }
+    
     io.to(`order_${data.orderId}`).emit('status_changed', {
       orderId: data.orderId,
       status: data.status,
@@ -192,27 +291,36 @@ io.on('connection', (socket) => {
     }
   });
 
-  // New order notification to merchant
+  // New order notification to merchant - SECURITY: Validate sender
   socket.on('new_order', (data) => {
     // data = { orderId, merchantId, orderDetails }
+    // This should only be triggered by system/customer creating order
+    if (!requireAuth()) return;
+    
     io.to(`merchant_${data.merchantId}`).emit('new_order', data);
   });
 
   // Order ready for pickup - broadcast to available drivers
   socket.on('order_ready', (data) => {
     // data = { orderId, merchantId, merchantLocation, deliveryAddress }
+    // Only merchants can mark order as ready
+    if (!requireRole(['MERCHANT'])) return;
+    
     io.to('drivers_available').emit('new_delivery', data);
   });
 
-  // Chat messaging
+  // Chat messaging - SECURITY: Use authenticated user ID, not client-provided
   socket.on('send_message', async (data) => {
-    // data = { roomId, message, senderId, senderName }
+    // data = { roomId, message }
+    if (!requireAuth()) return;
+    
     try {
+      // SECURITY: Use authenticated user ID from socket, not from client data
       const newMessage = await prisma.message.create({
         data: {
           text: data.message,
           order_id: parseInt(data.roomId),
-          sender_id: parseInt(data.senderId)
+          sender_id: socket.user.id  // Use authenticated user ID
         },
         include: {
           sender: {
@@ -224,19 +332,33 @@ io.on('connection', (socket) => {
       io.in(data.roomId).emit('receive_message', newMessage);
     } catch (error) {
       console.error("Socket send_message error:", error);
+      socket.emit('error', { message: 'Failed to send message' });
     }
   });
 
-  // Typing indicator
+  // Typing indicator - SECURITY: Use authenticated user ID
   socket.on('typing', (data) => {
+    if (!socket.user) return;
+    
     socket.to(data.roomId).emit('user_typing', {
-      userId: data.userId,
+      userId: socket.user.id,  // Use authenticated user ID
       isTyping: data.isTyping
     });
   });
 
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.id}`);
+  });
+});
+
+// ==================== GLOBAL ERROR HANDLER ====================
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: config.server.isProduction ? 'Internal Server Error' : err.message,
+    ...(config.server.isDevelopment && { stack: err.stack })
   });
 });
 
@@ -247,4 +369,5 @@ server.listen(port, () => {
   console.log(`🚀 Titipin Professional Backend running at http://localhost:${port}`);
   console.log(`📡 Real-time WebSocket enabled`);
   console.log(`📊 OMS, Financial, Promo engines active`);
+  console.log(`🔒 Environment: ${config.server.nodeEnv}`);
 });

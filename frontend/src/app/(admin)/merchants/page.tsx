@@ -262,7 +262,7 @@ export default function MerchantsPage() {
                           <p className="font-semibold text-gray-900">{merchant.name}</p>
                           <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
                             <MapPin size={12} />
-                            <span className="truncate max-w-[200px]">{merchant.address}</span>
+                            <span className="truncate max-w-50">{merchant.address}</span>
                           </div>
                           <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
                             <Phone size={12} />

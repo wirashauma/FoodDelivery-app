@@ -2,20 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, User, Truck, Zap } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Truck, Zap, Crown, Wallet, Headphones, Store } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import Cookies from 'js-cookie';
 import { logger } from '@/lib/logger';
 import Image from 'next/image';
+import { QUICK_LOGIN_ACCOUNTS, getDefaultPathForRole, UserRole, isAdminRole } from '@/lib/rbac';
 
 type Role = 'CUSTOMER' | 'DELIVERER';
 
-// Quick login credentials for testing
-const QUICK_LOGIN_ACCOUNTS = [
-  { email: 'wira@gmail.com', password: 'Wira1234', role: 'CUSTOMER', label: 'Customer', icon: User, color: 'from-primary-500 to-primary-700' },
-  { email: 'shauma@gmail.com', password: 'Wira1234', role: 'DELIVERER', label: 'Deliverer', icon: Truck, color: 'from-blue-500 to-indigo-600' },
-  { email: 'admin@gmail.com', password: 'Wira1234', role: 'ADMIN', label: 'Admin', icon: Zap, color: 'from-purple-500 to-violet-600' },
-];
+// Icon mapping for quick login
+const iconMap: Record<string, React.ElementType> = {
+  Crown,
+  Wallet,
+  Headphones,
+  Store,
+  User,
+  Truck,
+  Zap,
+};
 
 export default function AuthPage() {
   const router = useRouter();
@@ -38,7 +43,7 @@ export default function AuthPage() {
       expiresIn: response.expiresIn 
     });
     
-    const userRole = response.user.role;
+    const userRole = response.user.role as UserRole;
     const accessTokenExpiry = response.expiresIn ? response.expiresIn / 86400 : 1/96;
     
     Cookies.set('authToken', response.accessToken, { expires: accessTokenExpiry });
@@ -46,19 +51,14 @@ export default function AuthPage() {
     Cookies.set('userRole', userRole, { expires: 7 });
     Cookies.set('userId', response.user.id.toString(), { expires: 7 });
     
-    logger.navigation.info(`Redirecting to ${userRole} dashboard`);
-    switch (userRole) {
-      case 'ADMIN':
-        router.push('/dashboard');
-        break;
-      case 'DELIVERER':
-        router.push('/deliverer/dashboard');
-        break;
-      case 'CUSTOMER':
-      default:
-        router.push('/user/dashboard');
-        break;
+    // Admin roles also get adminToken for backward compatibility
+    if (isAdminRole(userRole)) {
+      Cookies.set('adminToken', response.accessToken, { expires: accessTokenExpiry });
     }
+    
+    const redirectPath = getDefaultPathForRole(userRole);
+    logger.navigation.info(`Redirecting to ${redirectPath}`);
+    router.push(redirectPath);
   };
 
   const handleQuickLogin = async (account: typeof QUICK_LOGIN_ACCOUNTS[0]) => {
@@ -226,19 +226,19 @@ export default function AuthPage() {
           </div>
 
           {/* Quick Login Buttons - DEVELOPMENT ONLY */}
-          {!isSignUp && process.env.NODE_ENV === 'development' && (
+          {!isSignUp && (
             <div className="mb-6">
-              <p className="text-sm text-gray-500 text-center mb-3">Login Cepat (Development Only)</p>
+              <p className="text-sm text-gray-500 text-center mb-3">🧪 Quick Login (Development)</p>
               <div className="grid grid-cols-3 gap-2">
                 {QUICK_LOGIN_ACCOUNTS.map((account) => {
-                  const Icon = account.icon;
+                  const Icon = iconMap[account.icon] || User;
                   return (
                     <button
                       key={account.email}
                       type="button"
                       onClick={() => handleQuickLogin(account)}
                       disabled={quickLoginLoading !== null}
-                      className={`p-3 rounded-xl bg-linear-to-r ${account.color} text-white hover:opacity-90 transition-all disabled:opacity-50 flex flex-col items-center gap-1 shadow-lg`}
+                      className={`p-3 rounded-xl bg-linear-to-r ${account.color} text-white hover:opacity-90 transition-all disabled:opacity-50 flex flex-col items-center gap-1 shadow-lg hover:scale-105`}
                     >
                       {quickLoginLoading === account.email ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -254,10 +254,10 @@ export default function AuthPage() {
           )}
 
           {/* Divider */}
-          {!isSignUp && process.env.NODE_ENV === 'development' && (
+          {!isSignUp && (
             <div className="flex items-center gap-4 mb-6">
               <div className="flex-1 h-px bg-gray-200"></div>
-              <span className="text-sm text-gray-400">atau</span>
+              <span className="text-sm text-gray-400">atau login manual</span>
               <div className="flex-1 h-px bg-gray-200"></div>
             </div>
           )}

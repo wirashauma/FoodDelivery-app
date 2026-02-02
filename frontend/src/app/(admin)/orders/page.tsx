@@ -76,7 +76,11 @@ export default function OrdersPage() {
     try {
       setExporting(true);
       toast.loading('Mengekspor data...', { id: 'export' });
-      const blob = await exportAPI.orders();
+      const response = await exportAPI.orders();
+      
+      // Ensure we have valid blob data
+      const blob = response instanceof Blob ? response : new Blob([JSON.stringify(response)], { type: 'text/csv' });
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

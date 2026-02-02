@@ -337,7 +337,8 @@ export const ordersAPI = {
   },
   getMyHistory: async () => {
     const response = await api.get('/orders/my-history');
-    return response.data;
+    // Backend returns { data: orders[] }
+    return response.data?.data || response.data || [];
   },
   getOrderOffers: async (orderId: number) => {
     const response = await api.get(`/orders/${orderId}/offers`);
@@ -347,11 +348,13 @@ export const ordersAPI = {
   // Deliverer endpoints
   getAvailable: async () => {
     const response = await api.get('/orders/available');
-    return response.data;
+    // Backend returns { data: orders[] }
+    return response.data?.data || response.data || [];
   },
   getMyActiveJobs: async () => {
     const response = await api.get('/orders/my-active-jobs');
-    return response.data;
+    // Backend returns { data: orders[] }
+    return response.data?.data || response.data || [];
   },
   updateStatus: async (orderId: number, status: string) => {
     const response = await api.post(`/orders/${orderId}/update-status`, { status });
@@ -359,15 +362,18 @@ export const ordersAPI = {
   },
   getDelivererStats: async () => {
     const response = await api.get('/orders/deliverer/dashboard/stats');
-    return response.data;
+    // Backend returns { status: 'sukses', data: {...} }
+    return response.data?.data || response.data || {};
   },
   getDelivererActive: async () => {
     const response = await api.get('/orders/deliverer/active');
-    return response.data;
+    // Backend returns { status: 'sukses', data: orders[] }
+    return response.data?.data || response.data || [];
   },
   getDelivererCompleted: async (limit = 10, offset = 0) => {
     const response = await api.get(`/orders/deliverer/completed?limit=${limit}&offset=${offset}`);
-    return response.data;
+    // Backend returns { status: 'sukses', data: orders[], pagination: {...} }
+    return response.data?.data || response.data || [];
   },
   
   // Admin endpoints
@@ -403,11 +409,13 @@ export const offersAPI = {
 export const chatAPI = {
   getChats: async () => {
     const response = await api.get('/chats');
-    return response.data;
+    // Backend returns { data: chats[] }
+    return response.data?.data || response.data || [];
   },
   getMessages: async (chatId: number) => {
     const response = await api.get(`/chats/${chatId}/messages`);
-    return response.data;
+    // Backend returns { data: messages[] }
+    return response.data?.data || response.data || [];
   },
   sendMessage: async (chatId: number, message: string) => {
     const response = await api.post(`/chats/${chatId}/messages`, { message });
@@ -435,10 +443,28 @@ export const dashboardAPI = {
 
 // Notifications API
 export const notificationsAPI = {
+  // Get notifications for current user (works for all roles)
   getAll: async (limit = 10) => {
+    const response = await api.get('/notifications', {
+      params: { limit },
+    });
+    return response.data?.data || response.data || [];
+  },
+  // Admin notifications (legacy)
+  getAdminNotifications: async (limit = 10) => {
     const response = await api.get('/admin/notifications', {
       params: { limit },
     });
+    return response.data;
+  },
+  // Mark as read
+  markAsRead: async (id: number) => {
+    const response = await api.patch(`/notifications/${id}/read`);
+    return response.data;
+  },
+  // Mark all as read
+  markAllAsRead: async () => {
+    const response = await api.patch('/notifications/read-all');
     return response.data;
   },
 };
@@ -596,6 +622,93 @@ export const ratingsAPI = {
   // Get deliverer ratings
   getDelivererRatings: async (delivererId: number, params?: { page?: number; limit?: number }) => {
     const response = await api.get(`/ratings/deliverer/${delivererId}`, { params });
+    return response.data;
+  },
+};
+
+// Payout API
+export const payoutAPI = {
+  // Get all payout requests (for current user/merchant)
+  getAll: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/merchants/me/payouts', { params });
+    return response.data?.data || response.data || [];
+  },
+  // Request a payout
+  request: async (data: { amount: number; bankName: string; accountNumber: string; accountName: string }) => {
+    const response = await api.post('/merchants/me/payouts', data);
+    return response.data;
+  },
+  // Get payout by ID
+  getById: async (id: string) => {
+    const response = await api.get(`/financial/payouts/${id}`);
+    return response.data;
+  },
+  // Admin: Get all payout requests
+  getAllAdmin: async (params?: { status?: string; type?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/financial/payouts', { params });
+    return response.data?.data || response.data || [];
+  },
+  // Admin: Process payout
+  process: async (id: string, data: { status: string; notes?: string }) => {
+    const response = await api.put(`/financial/payouts/${id}/process`, data);
+    return response.data;
+  },
+};
+
+// Merchant Self-Service API (for logged-in merchants)
+export const merchantAPI = {
+  // Get current merchant profile
+  getProfile: async () => {
+    const response = await api.get('/merchants/me');
+    return response.data?.data || response.data;
+  },
+  // Update merchant profile
+  updateProfile: async (data: {
+    businessName?: string;
+    description?: string;
+    address?: string;
+    city?: string;
+    phone?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountName?: string;
+  }) => {
+    const response = await api.put('/merchants/me', data);
+    return response.data;
+  },
+  // Get merchant dashboard stats
+  getStats: async () => {
+    const response = await api.get('/merchants/me/stats');
+    return response.data?.data || response.data;
+  },
+  // Get merchant orders
+  getOrders: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/merchants/me/orders', { params });
+    return response.data?.data || response.data || [];
+  },
+  // Update order status
+  updateOrderStatus: async (orderId: number, status: string) => {
+    const response = await api.patch(`/merchants/me/orders/${orderId}/status`, { status });
+    return response.data;
+  },
+  // Get merchant products
+  getProducts: async (params?: { kategori?: string; search?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/merchants/me/products', { params });
+    return response.data?.data || response.data || [];
+  },
+  // Get merchant earnings
+  getEarnings: async (period: 'week' | 'month' | 'year' = 'week') => {
+    const response = await api.get('/merchants/me/earnings', { params: { period } });
+    return response.data?.data || response.data;
+  },
+  // Get merchant payouts
+  getPayouts: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/merchants/me/payouts', { params });
+    return response.data?.data || response.data || [];
+  },
+  // Request payout
+  requestPayout: async (data: { amount: number; bankName?: string; accountNumber?: string; accountName?: string; notes?: string }) => {
+    const response = await api.post('/merchants/me/payouts', data);
     return response.data;
   },
 };
