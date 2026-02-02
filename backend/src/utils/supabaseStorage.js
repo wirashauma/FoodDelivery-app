@@ -29,7 +29,11 @@ const BUCKETS = {
   DOCUMENTS: 'documents',
   PRODUCTS: 'products',
   RESTAURANTS: 'restaurants',
-  PROFILES: 'profiles'
+  PROFILES: 'profiles',
+  MERCHANT_LOGOS: 'merchant-logos',
+  MERCHANT_BANNERS: 'merchant-banners',
+  MERCHANT_DOCUMENTS: 'merchant-documents',
+  PRODUCT_IMAGES: 'product-images'
 };
 
 /**
@@ -228,12 +232,55 @@ const getPublicUrl = (bucket, filePath) => {
   return data.publicUrl;
 };
 
+/**
+ * Upload merchant logo
+ * @param {Object} file - Multer file object
+ * @param {number} merchantId - Merchant ID
+ */
+const uploadMerchantLogo = async (file, merchantId) => {
+  const extension = path.extname(file.originalname) || '.jpg';
+  const fileName = `logo_${merchantId}${extension}`;
+  const contentType = file.mimetype || 'image/jpeg';
+
+  return uploadFile(file.buffer || file.path, BUCKETS.MERCHANT_LOGOS, fileName, contentType);
+};
+
+/**
+ * Upload merchant banner
+ * @param {Object} file - Multer file object
+ * @param {number} merchantId - Merchant ID
+ */
+const uploadMerchantBanner = async (file, merchantId) => {
+  const extension = path.extname(file.originalname) || '.jpg';
+  const fileName = `banner_${merchantId}${extension}`;
+  const contentType = file.mimetype || 'image/jpeg';
+
+  return uploadFile(file.buffer || file.path, BUCKETS.MERCHANT_BANNERS, fileName, contentType);
+};
+
+/**
+ * Upload merchant document (SIUP, NIB, etc.)
+ * @param {Object} file - Multer file object
+ * @param {string} documentType - Type of document
+ * @param {number} merchantId - Merchant ID
+ */
+const uploadMerchantDocument = async (file, documentType, merchantId) => {
+  const extension = path.extname(file.originalname) || '.jpg';
+  const fileName = `${documentType}_${merchantId}_${Date.now()}${extension}`;
+  const contentType = file.mimetype || 'application/pdf';
+
+  return uploadFile(file.buffer || file.path, BUCKETS.MERCHANT_DOCUMENTS, fileName, contentType);
+};
+
 module.exports = {
   uploadFile,
   uploadDocument,
   uploadProductImage,
   uploadRestaurantImage,
   uploadProfilePicture,
+  uploadMerchantLogo,
+  uploadMerchantBanner,
+  uploadMerchantDocument,
   deleteFile,
   getPublicUrl,
   BUCKETS,

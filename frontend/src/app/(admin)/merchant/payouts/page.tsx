@@ -108,7 +108,7 @@ export default function MerchantPayouts() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -116,16 +116,16 @@ export default function MerchantPayouts() {
   return (
     <div className="space-y-6">
       {/* Balance Card */}
-      <div className="bg-linear-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white">
+      <div className="bg-linear-to-r from-red-500 to-red-500 rounded-2xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-orange-100 text-sm">Saldo Tersedia</p>
+            <p className="text-red-100 text-sm">Saldo Tersedia</p>
             <p className="text-3xl font-bold mt-1">{formatCurrency(pendingBalance)}</p>
-            <p className="text-orange-200 text-sm mt-2">Dapat dicairkan kapan saja</p>
+            <p className="text-red-200 text-sm mt-2">Dapat dicairkan kapan saja</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-orange-600 rounded-xl font-medium hover:bg-orange-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors"
           >
             <ArrowUpRight className="w-4 h-4" />
             Cairkan
@@ -247,9 +247,9 @@ export default function MerchantPayouts() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div className="p-4 bg-orange-50 rounded-xl text-center">
-                <p className="text-sm text-orange-600">Saldo Tersedia</p>
-                <p className="text-2xl font-bold text-orange-700">{formatCurrency(pendingBalance)}</p>
+              <div className="p-4 bg-red-50 rounded-xl text-center">
+                <p className="text-sm text-red-600">Saldo Tersedia</p>
+                <p className="text-2xl font-bold text-red-700">{formatCurrency(pendingBalance)}</p>
               </div>
 
               <div>
@@ -258,7 +258,7 @@ export default function MerchantPayouts() {
                   type="number"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                   min={10000}
                   max={pendingBalance}
@@ -271,7 +271,7 @@ export default function MerchantPayouts() {
                 <select
                   value={formData.bankName}
                   onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                 >
                   <option value="">Pilih Bank</option>
@@ -293,7 +293,7 @@ export default function MerchantPayouts() {
                   type="text"
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                   placeholder="Masukkan nomor rekening"
                 />
@@ -305,7 +305,7 @@ export default function MerchantPayouts() {
                   type="text"
                   value={formData.accountName}
                   onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                   placeholder="Nama sesuai rekening"
                 />
@@ -322,7 +322,7 @@ export default function MerchantPayouts() {
                 <button
                   type="submit"
                   disabled={submitting || formData.amount > pendingBalance}
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Memproses...' : 'Ajukan'}
                 </button>

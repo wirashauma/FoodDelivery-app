@@ -58,7 +58,8 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/merchant/dashboard': { title: 'Dashboard Merchant', subtitle: 'Ringkasan toko dan statistik' },
   '/merchant/profile': { title: 'Profil Toko', subtitle: 'Kelola informasi toko Anda' },
   '/merchant/products': { title: 'Produk Saya', subtitle: 'Kelola menu dan produk' },
-  '/merchant/orders': { title: 'Pesanan', subtitle: 'Kelola pesanan masuk' },
+  '/merchant/orders': { title: 'Pesanan Masuk', subtitle: 'Kelola pesanan yang perlu diproses' },
+  '/merchant/orders/history': { title: 'Riwayat Pesanan', subtitle: 'Lihat pesanan yang sudah selesai' },
   '/merchant/earnings': { title: 'Pendapatan', subtitle: 'Lihat laporan pendapatan' },
   '/merchant/payouts': { title: 'Pencairan', subtitle: 'Ajukan pencairan dana' },
 };

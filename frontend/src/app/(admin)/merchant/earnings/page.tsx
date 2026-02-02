@@ -103,7 +103,7 @@ export default function MerchantEarningsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function MerchantEarningsPage() {
             onClick={() => setPeriod(p)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               period === p
-                ? 'bg-orange-500 text-white'
+                ? 'bg-red-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -129,15 +129,15 @@ export default function MerchantEarningsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-linear-to-br from-orange-500 to-red-500 rounded-2xl p-5 text-white">
+        <div className="bg-linear-to-br from-red-500 to-red-500 rounded-2xl p-5 text-white">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <DollarSign className="w-6 h-6" />
             </div>
-            <span className="text-orange-100">Pendapatan Bersih</span>
+            <span className="text-red-100">Pendapatan Bersih</span>
           </div>
           <p className="text-3xl font-bold">{formatCurrency(summary.totalEarnings)}</p>
-          <p className="text-sm text-orange-200 mt-2">Setelah komisi {summary.commissionRate}%</p>
+          <p className="text-sm text-red-200 mt-2">Setelah komisi {summary.commissionRate}%</p>
         </div>
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -200,7 +200,7 @@ export default function MerchantEarningsPage() {
                 <span className="w-16 text-sm text-gray-500">{day.date}</span>
                 <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
                   <div 
-                    className="h-full bg-linear-to-r from-orange-400 to-orange-500 rounded-lg transition-all duration-500"
+                    className="h-full bg-linear-to-r from-red-400 to-red-500 rounded-lg transition-all duration-500"
                     style={{ width: `${(displayAmount / maxDailyAmount) * 100}%` }}
                   />
                 </div>

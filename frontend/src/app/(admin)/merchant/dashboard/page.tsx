@@ -109,7 +109,7 @@ export default function MerchantDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -117,13 +117,13 @@ export default function MerchantDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-linear-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white">
+      <div className="bg-linear-to-r from-red-500 to-red-500 rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">
           Selamat Datang{merchantInfo?.businessName ? `, ${merchantInfo.businessName}` : ''}! 👋
         </h1>
-        <p className="text-orange-100">Kelola restoran dan pesanan Anda dengan mudah.</p>
+        <p className="text-red-100">Kelola restoran dan pesanan Anda dengan mudah.</p>
         {merchantInfo && (
-          <div className="mt-2 text-sm text-orange-100">
+          <div className="mt-2 text-sm text-red-100">
             ⭐ Rating: {merchantInfo.rating?.toFixed(1) || 'N/A'} ({merchantInfo.reviewCount || 0} ulasan)
           </div>
         )}
@@ -133,8 +133,8 @@ export default function MerchantDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Package className="w-6 h-6 text-orange-600" />
+            <div className="p-3 bg-red-100 rounded-xl">
+              <Package className="w-6 h-6 text-red-600" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Produk</p>

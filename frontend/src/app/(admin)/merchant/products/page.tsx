@@ -130,7 +130,7 @@ export default function MerchantProducts() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -146,12 +146,12 @@ export default function MerchantProducts() {
             placeholder="Cari produk..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
           />
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
         >
           <Plus className="w-5 h-5" />
           Tambah Produk
@@ -180,7 +180,7 @@ export default function MerchantProducts() {
             <div className="p-4">
               <h3 className="font-semibold text-gray-900 truncate">{product.nama}</h3>
               <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product.deskripsi || '-'}</p>
-              <p className="text-lg font-bold text-orange-600 mt-2">{formatCurrency(product.harga)}</p>
+              <p className="text-lg font-bold text-red-600 mt-2">{formatCurrency(product.harga)}</p>
               
               <div className="flex items-center gap-2 mt-4">
                 <button
@@ -240,7 +240,7 @@ export default function MerchantProducts() {
                   type="text"
                   value={formData.nama}
                   onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                 />
               </div>
@@ -251,7 +251,7 @@ export default function MerchantProducts() {
                   value={formData.deskripsi}
                   onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none resize-none"
                 />
               </div>
               
@@ -261,7 +261,7 @@ export default function MerchantProducts() {
                   type="number"
                   value={formData.harga}
                   onChange={(e) => setFormData({ ...formData, harga: Number(e.target.value) })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   required
                   min={0}
                 />
@@ -273,7 +273,7 @@ export default function MerchantProducts() {
                   type="text"
                   value={formData.kategori}
                   onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   placeholder="Makanan, Minuman, dll."
                 />
               </div>
@@ -284,7 +284,7 @@ export default function MerchantProducts() {
                   type="text"
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                   placeholder="https://..."
                 />
               </div>
@@ -295,7 +295,7 @@ export default function MerchantProducts() {
                   id="isAvailable"
                   checked={formData.isAvailable}
                   onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                  className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
                 />
                 <label htmlFor="isAvailable" className="text-sm text-gray-700">Produk Aktif</label>
               </div>
@@ -311,7 +311,7 @@ export default function MerchantProducts() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Menyimpan...' : editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
                 </button>

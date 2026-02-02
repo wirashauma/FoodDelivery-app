@@ -9,8 +9,22 @@ const { authenticate } = require('../middleware/authMiddleware');
 const { authorize, authorizePermission, auditLog } = require('../middleware/rbacMiddleware');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ==================== PUBLIC ROUTES ====================
+
+// Public merchant registration (no auth required)
+router.post(
+  '/register',
+  upload.fields([
+    { name: 'siup', maxCount: 1 },
+    { name: 'nib', maxCount: 1 },
+    { name: 'npwp', maxCount: 1 },
+    { name: 'halal', maxCount: 1 }
+  ]),
+  merchantController.registerPublic
+);
 
 // Get active merchants (for consumers) - Uses getAllMerchants with isActive filter
 router.get('/public', async (req, res) => {
@@ -72,6 +86,22 @@ router.get('/me', authenticate, authorize('MERCHANT'), async (req, res) => {
     });
   }
 });
+
+// Upload merchant logo
+router.post('/me/logo', 
+  authenticate, 
+  authorize('MERCHANT'),
+  upload.single('logo'),
+  merchantController.uploadLogo
+);
+
+// Upload merchant banner
+router.post('/me/banner',
+  authenticate,
+  authorize('MERCHANT'),
+  upload.single('banner'),
+  merchantController.uploadBanner
+);
 
 // Update current merchant profile
 router.put('/me', authenticate, authorize('MERCHANT'), async (req, res) => {
@@ -163,13 +193,13 @@ router.get('/me/orders', authenticate, authorize('MERCHANT'), async (req, res) =
           customer: {
             select: { id: true, fullName: true, phone: true }
           },
-          deliverer: {
+          driver: {
             select: { id: true, fullName: true, phone: true }
           },
           items: {
             include: {
               product: {
-                select: { id: true, nama: true, harga: true, imageUrl: true }
+                select: { id: true, name: true, basePrice: true, photos: true }
               }
             }
           }

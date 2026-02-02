@@ -10,6 +10,199 @@
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { uploadFile, uploadMerchantDocument, uploadMerchantLogo, uploadMerchantBanner } = require('../utils/supabaseStorage');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ==================== PUBLIC MERCHANT REGISTRATION ====================
+
+/**
+ * Public merchant registration (no auth required)
+ * This allows business owners to register and submit documents for verification
+ */
+exports.registerPublic = async (req, res) => {
+  try {
+    const {
+      // Business Info
+      businessName,
+      description,
+      cuisineTypes,
+      phone,
+      email,
+      // Location
+      address,
+      city,
+      district,
+      postalCode,
+      latitude,
+      longitude,
+      // Operational Hours
+      operationalHours,
+      // Bank Account
+      bankName,
+      bankAccountNumber,
+      bankAccountName,
+      // User email (for linking account)
+      userEmail
+    } = req.body;
+
+    // Parse cuisineTypes if it's a string
+    const parsedCuisineTypes = typeof cuisineTypes === 'string' 
+      ? JSON.parse(cuisineTypes) 
+      : cuisineTypes;
+
+    // Parse operational hours if it's a string
+    const parsedHours = typeof operationalHours === 'string'
+      ? JSON.parse(operationalHours)
+      : operationalHours;
+
+    // Find or create user account
+    let user = await prisma.user.findUnique({
+      where: { email: userEmail || email }
+    });
+
+    if (!user) {
+      // Create new user account (they need to set password later via password reset)
+      user = await prisma.user.create({
+        data: {
+          email: userEmail || email,
+          phone: phone,
+          role: 'MERCHANT',
+          isActive: false, // Inactive until verified
+          isVerified: false,
+          fullName: businessName // Use business name as placeholder
+        }
+      });
+    } else {
+      // Update existing user role to MERCHANT
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'MERCHANT' }
+      });
+    }
+
+    // Generate slug
+    const slug = businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+
+    // Create merchant profile
+    const merchant = await prisma.merchant.create({
+      data: {
+        ownerId: user.id,
+        businessName,
+        slug,
+        description,
+        phone,
+        email,
+        address,
+        latitude: latitude ? parseFloat(latitude) : 0,
+        longitude: longitude ? parseFloat(longitude) : 0,
+        city,
+        district,
+        postalCode,
+        cuisineTypes: parsedCuisineTypes || [],
+        verificationStatus: 'PENDING',
+        isActive: false,
+        isOpen: false,
+        // Bank info (encrypted in production)
+        bankName,
+        bankAccountNumber,
+        bankAccountName,
+        operationalHours: parsedHours ? {
+          createMany: {
+            data: parsedHours.map(hour => ({
+              dayOfWeek: parseInt(hour.dayOfWeek),
+              openTime: hour.openTime,
+              closeTime: hour.closeTime,
+              isClosed: hour.isClosed || false
+            }))
+          }
+        } : undefined
+      },
+      include: {
+        operationalHours: true
+      }
+    });
+
+    // Handle document uploads if files are present
+    const documents = [];
+    if (req.files) {
+      const documentTypes = {
+        siup: 'SIUP',
+        nib: 'NIB',
+        npwp: 'NPWP',
+        halal: 'HALAL_CERTIFICATE'
+      };
+
+      for (const [fileKey, docType] of Object.entries(documentTypes)) {
+        const file = req.files[fileKey]?.[0];
+        if (file) {
+          try {
+            const uploadResult = await uploadMerchantDocument(
+              file,
+              docType,
+              merchant.id
+            );
+
+            const document = await prisma.merchantDocument.create({
+              data: {
+                merchantId: merchant.id,
+                type: docType,
+                documentUrl: uploadResult.url,
+                status: 'PENDING'
+              }
+            });
+
+            documents.push(document);
+          } catch (uploadError) {
+            console.error(`Failed to upload ${docType}:`, uploadError);
+          }
+        }
+      }
+    }
+
+    // Create notification for admins
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_STAFF'] }
+      },
+      select: { id: true }
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map(admin => ({
+          userId: admin.id,
+          type: 'MERCHANT_UPDATE',
+          title: 'Pendaftaran Merchant Baru',
+          body: `${businessName} telah mendaftar dan menunggu verifikasi dokumen.`,
+        }))
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Pendaftaran berhasil! Tim kami akan menghubungi Anda setelah dokumen diverifikasi.',
+      data: {
+        merchant: {
+          id: merchant.id,
+          businessName: merchant.businessName,
+          verificationStatus: merchant.verificationStatus
+        },
+        documents: documents.length
+      }
+    });
+  } catch (error) {
+    console.error('Public merchant registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Registration Failed',
+      message: error.message
+    });
+  }
+};
 
 // ==================== MERCHANT CRUD ====================
 
@@ -847,6 +1040,116 @@ exports.getMerchantStats = async (req, res) => {
     });
   } catch (error) {
     console.error('Get merchant stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    });
+  }
+};
+
+// ==================== MERCHANT IMAGE UPLOADS ====================
+
+/**
+ * Upload merchant logo
+ */
+exports.uploadLogo = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find merchant by owner
+    const merchant = await prisma.merchant.findFirst({
+      where: { ownerId: userId }
+    });
+
+    if (!merchant) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Merchant profile not found'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Upload to Supabase
+    const uploadResult = await uploadMerchantLogo(req.file, merchant.id);
+
+    // Update merchant
+    const updated = await prisma.merchant.update({
+      where: { id: merchant.id },
+      data: { logoUrl: uploadResult.url }
+    });
+
+    res.json({
+      success: true,
+      message: 'Logo uploaded successfully',
+      data: {
+        logoUrl: uploadResult.url
+      }
+    });
+  } catch (error) {
+    console.error('Upload logo error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message
+    });
+  }
+};
+
+/**
+ * Upload merchant banner
+ */
+exports.uploadBanner = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find merchant by owner
+    const merchant = await prisma.merchant.findFirst({
+      where: { ownerId: userId }
+    });
+
+    if (!merchant) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Merchant profile not found'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Upload to Supabase
+    const uploadResult = await uploadMerchantBanner(req.file, merchant.id);
+
+    // Update merchant
+    const updated = await prisma.merchant.update({
+      where: { id: merchant.id },
+      data: { bannerUrl: uploadResult.url }
+    });
+
+    res.json({
+      success: true,
+      message: 'Banner uploaded successfully',
+      data: {
+        bannerUrl: uploadResult.url
+      }
+    });
+  } catch (error) {
+    console.error('Upload banner error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal Server Error',

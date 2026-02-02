@@ -10,8 +10,9 @@ interface OrderItem {
   quantity: number;
   price: number;
   product?: {
-    nama?: string;
-    harga?: number;
+    name?: string;
+    basePrice?: number;
+    photos?: string[];
   };
 }
 
@@ -126,7 +127,7 @@ export default function MerchantOrders() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -142,7 +143,7 @@ export default function MerchantOrders() {
             placeholder="Cari pesanan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
           />
         </div>
         <button
@@ -169,7 +170,7 @@ export default function MerchantOrders() {
             onClick={() => setStatusFilter(tab.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
               statusFilter === tab.key
-                ? 'bg-orange-500 text-white'
+                ? 'bg-red-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -193,8 +194,8 @@ export default function MerchantOrders() {
               {/* Order Header */}
               <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <ShoppingBag className="w-5 h-5 text-orange-600" />
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <ShoppingBag className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
                     <p className="font-semibold">Order #{order.orderNumber || String(order.id).substring(0, 8)}</p>
@@ -226,8 +227,8 @@ export default function MerchantOrders() {
                     <div className="space-y-1">
                       {order.items.slice(0, 3).map((item: OrderItem, idx: number) => (
                         <div key={idx} className="flex justify-between text-sm">
-                          <span className="text-gray-700">{item.quantity}x {item.product?.nama || item.name || item.productName}</span>
-                          <span className="text-gray-500">{formatCurrency((item.product?.harga || item.price) * item.quantity)}</span>
+                          <span className="text-gray-700">{item.quantity}x {item.product?.name || item.name || item.productName}</span>
+                          <span className="text-gray-500">{formatCurrency((item.product?.basePrice || item.price) * item.quantity)}</span>
                         </div>
                       ))}
                       {order.items.length > 3 && (
@@ -247,7 +248,7 @@ export default function MerchantOrders() {
                 {/* Total */}
                 <div className="flex justify-between items-center pt-3 border-t border-gray-100">
                   <span className="font-medium text-gray-700">Total</span>
-                  <span className="text-lg font-bold text-orange-600">{formatCurrency(order.subtotal || order.total || 0)}</span>
+                  <span className="text-lg font-bold text-red-600">{formatCurrency(order.subtotal || order.total || 0)}</span>
                 </div>
               </div>
 
