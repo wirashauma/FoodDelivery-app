@@ -8,9 +8,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: ".env");
+  await dotenv.load();
 
-  await initializeDateFormatting('id_ID', null);
+  await initializeDateFormatting('id_ID');
   runApp(const MyApp());
 }
 

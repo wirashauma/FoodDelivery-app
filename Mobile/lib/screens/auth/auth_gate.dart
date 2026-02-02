@@ -38,7 +38,7 @@ class _AuthGateState extends State<AuthGate> {
       }
 
       // Decode token
-      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final role =
           decodedToken['user']['role']?.toString().toUpperCase() ?? 'USER';
 
@@ -82,7 +82,7 @@ class _AuthGateState extends State<AuthGate> {
         return AuthResult(status: AuthStatus.needsOnboarding);
       }
     } catch (e) {
-      debugPrint("Error in auth check: $e");
+      debugPrint('Error in auth check: $e');
       await _storage.deleteAll();
       return AuthResult(status: AuthStatus.notAuthenticated);
     }

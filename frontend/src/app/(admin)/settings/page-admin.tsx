@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   Settings as SettingsIcon,
-  DollarSign,
   Percent,
   Truck,
   Bell,
@@ -75,7 +74,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const handleChange = (section: keyof SystemSettings, field: string, value: any) => {
+  const handleChange = (section: keyof SystemSettings, field: string, value: string | number | boolean) => {
     setSettings((prev) => ({
       ...prev,
       [section]: {
@@ -136,7 +135,7 @@ export default function SettingsPage() {
         },
       });
       setHasChanges(true);
-      toast.info('Pengaturan direset ke default');
+      toast('Pengaturan direset ke default', { icon: 'ℹ️' });
     }
   };
 
@@ -170,7 +169,7 @@ export default function SettingsPage() {
       {hasChanges && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
-            Ada perubahan yang belum disimpan. Klik "Simpan Perubahan" untuk menyimpan.
+            Ada perubahan yang belum disimpan. Klik &quot;Simpan Perubahan&quot; untuk menyimpan.
           </p>
         </div>
       )}

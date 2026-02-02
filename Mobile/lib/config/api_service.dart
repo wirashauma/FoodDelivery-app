@@ -27,10 +27,6 @@ class _ApiCache {
     _cache[key] = _CacheEntry(data: data, expiry: expiry);
   }
 
-  static void invalidate(String key) {
-    _cache.remove(key);
-  }
-
   static void invalidatePattern(String pattern) {
     _cache.removeWhere((key, value) => key.contains(pattern));
   }

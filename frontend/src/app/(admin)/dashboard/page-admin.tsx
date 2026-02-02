@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { 
   adminDashboardAPI, 
-  adminOrdersAPI, 
-  adminUsersAPI 
+  adminOrdersAPI
 } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -143,7 +142,7 @@ export default function AdminDashboardPage() {
       header: 'Status',
       accessor: (order) => (
         <StatusBadge 
-          status={order.status as any} 
+          status={order.status as 'PENDING' | 'PROCESSING' | 'ON_DELIVERY' | 'DELIVERED' | 'CANCELLED'} 
         />
       ),
     },
@@ -212,7 +211,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg">
+      <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg">
         <h1 className="text-2xl font-bold mb-2">Dashboard Admin</h1>
         <p className="text-blue-100">
           Selamat datang! Kelola platform food delivery dengan mudah.

@@ -326,25 +326,25 @@ export default function DashboardPage() {
           title="Pesanan Pending"
           description={`${stats?.orders?.pending || 0} pesanan menunggu`}
           icon={Clock}
-          color="bg-gradient-to-r from-amber-500 to-orange-500"
+          color="bg-linear-to-r from-amber-500 to-orange-500"
         />
         <QuickActionCard
           title="Hari Ini"
           description={`${stats?.orders?.today || 0} pesanan masuk`}
           icon={Bike}
-          color="bg-gradient-to-r from-purple-500 to-violet-500"
+          color="bg-linear-to-r from-purple-500 to-violet-500"
         />
         <QuickActionCard
           title="Pesanan Selesai"
           description={`${stats?.orders?.completed || 0} pesanan selesai`}
           icon={Activity}
-          color="bg-gradient-to-r from-primary-500 to-primary-700"
+          color="bg-linear-to-r from-primary-500 to-primary-700"
         />
         <QuickActionCard
           title="Minggu Ini"
           description={`${stats?.orders?.thisWeek || 0} pesanan total`}
           icon={Zap}
-          color="bg-gradient-to-r from-blue-500 to-indigo-500"
+          color="bg-linear-to-r from-blue-500 to-indigo-500"
         />
       </div>
 

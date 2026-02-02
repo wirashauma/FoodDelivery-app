@@ -11,12 +11,9 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        surface: AppColors.surface,
         error: AppColors.error,
-        onPrimary: AppColors.textOnPrimary,
         onSecondary: AppColors.textOnPrimary,
         onSurface: AppColors.textPrimary,
-        onError: AppColors.textOnPrimary,
       ),
 
       // AppBar Theme

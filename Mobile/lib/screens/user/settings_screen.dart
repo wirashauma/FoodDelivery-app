@@ -615,7 +615,6 @@ class _ProfileCard extends StatelessWidget {
                       color: isComplete
                           ? _primaryColor.withValues(alpha: 0.3)
                           : const Color(0xFFFDE68A),
-                      width: 1,
                     ),
                   ),
                   child: Row(
@@ -968,7 +967,7 @@ class _LogoutSection extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(12 * scale),
-                  border: Border.all(color: const Color(0xFFEBCCCC), width: 1),
+                  border: Border.all(color: const Color(0xFFEBCCCC)),
                 ),
                 padding: EdgeInsets.symmetric(vertical: 14 * scale),
                 child: Center(

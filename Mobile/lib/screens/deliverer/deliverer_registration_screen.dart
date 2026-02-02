@@ -613,7 +613,6 @@ class _DelivererRegistrationScreenState
                         currentStep: _currentStep,
                         onStepContinue: _stepContinue,
                         onStepCancel: _stepCancel,
-                        type: StepperType.vertical,
                         controlsBuilder: (context, details) {
                           return const SizedBox.shrink();
                         },
@@ -907,7 +906,6 @@ class _DelivererRegistrationScreenState
       Step(
         title: const Text('Data Kendaraan'),
         isActive: _currentStep >= 2,
-        state: StepState.indexed,
         content: Column(
           children: [
             const SizedBox(height: 8),

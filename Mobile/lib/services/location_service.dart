@@ -39,7 +39,7 @@ class LocationService {
     double longitude,
   ) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
+      final List<Placemark> placemarks = await placemarkFromCoordinates(
         latitude,
         longitude,
       );

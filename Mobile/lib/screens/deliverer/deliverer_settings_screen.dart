@@ -1227,7 +1227,7 @@ class _LogoutSection extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(12 * scale),
-                  border: Border.all(color: const Color(0xFFEBCCCC), width: 1),
+                  border: Border.all(color: const Color(0xFFEBCCCC)),
                 ),
                 padding: EdgeInsets.symmetric(vertical: 14 * scale),
                 child: Center(

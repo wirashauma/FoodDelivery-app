@@ -333,7 +333,6 @@ class _WaitingForOffersScreenState extends State<WaitingForOffersScreen> {
                             orderId: widget.orderId,
                             recipientId: offer.delivererId,
                             recipientName: offer.delivererName,
-                            isDeliverer: false,
                           ),
                         ),
                       );

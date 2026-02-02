@@ -168,7 +168,7 @@ class _CartScreenState extends State<CartScreen> {
 
   double _calculateTotal() {
     double total = 0;
-    for (var item in cartItems) {
+    for (final item in cartItems) {
       final product = item['product'];
       final price = double.tryParse(product['price'].toString()) ?? 0;
       final quantity = item['quantity'] ?? 1;

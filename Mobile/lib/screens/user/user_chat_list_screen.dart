@@ -165,7 +165,6 @@ class _UserChatListScreenState extends State<UserChatListScreen> {
               orderId: order['id'],
               recipientId: deliverer['id'],
               recipientName: deliverer?['name'] ?? 'Deliverer',
-              isDeliverer: false,
             ),
           ),
         ).then((_) => _loadChatList());

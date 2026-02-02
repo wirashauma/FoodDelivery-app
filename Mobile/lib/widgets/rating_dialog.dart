@@ -74,7 +74,6 @@ class _RatingDialogState extends State<RatingDialog> {
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               widget.title,
@@ -97,11 +96,7 @@ class _RatingDialogState extends State<RatingDialog> {
             ],
             const SizedBox(height: 24),
             RatingBar.builder(
-              initialRating: 0,
               minRating: 1,
-              direction: Axis.horizontal,
-              allowHalfRating: false,
-              itemCount: 5,
               itemPadding: const EdgeInsets.symmetric(horizontal: 4),
               itemBuilder: (context, _) => const Icon(
                 Icons.star,

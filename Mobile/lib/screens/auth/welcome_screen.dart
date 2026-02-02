@@ -59,7 +59,7 @@ class WelcomeScreen extends StatelessWidget {
 
                   // Judul
                   const Text(
-                    "Welcome!",
+                    'Welcome!',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -70,8 +70,8 @@ class WelcomeScreen extends StatelessWidget {
 
                   // Deskripsi singkat
                   const Text(
-                    "Mulai perjalananmu bersama aplikasi ini.\n"
-                    "Silakan login atau buat akun baru.",
+                    'Mulai perjalananmu bersama aplikasi ini.\n'
+                    'Silakan login atau buat akun baru.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),

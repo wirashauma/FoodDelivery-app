@@ -43,14 +43,6 @@ interface Order {
   updatedAt: string;
 }
 
-interface OrdersResponse {
-  items: Order[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 export default function OrdersManagementPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -69,6 +61,7 @@ export default function OrdersManagementPage() {
 
   useEffect(() => {
     fetchOrders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filters]);
 
   const fetchOrders = async () => {
@@ -121,7 +114,7 @@ export default function OrdersManagementPage() {
   };
 
   const handleExport = async () => {
-    toast.info('Export feature coming soon');
+    toast('Export feature coming soon', { icon: 'ℹ️' });
   };
 
   const formatCurrency = (value: number) => {

@@ -394,7 +394,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                           orderId: order.id,
                           recipientId: order.delivererId!,
                           recipientName: order.delivererName ?? 'Deliverer',
-                          isDeliverer: false,
                         ),
                       ),
                     );

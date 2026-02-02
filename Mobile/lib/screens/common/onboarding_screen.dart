@@ -80,7 +80,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       padding: EdgeInsets.all(isSmallScreen ? 20.0 : 40.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           SizedBox(
                             height: isSmallScreen ? 150 : 250,
@@ -157,8 +156,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: Text(
                         _currentPage == onboardingContents.length - 1
-                            ? "Get started"
-                            : "Continue",
+                            ? 'Get started'
+                            : 'Continue',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 14 : 16,
                           color: Colors.white,
@@ -177,7 +176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         );
                       },
                       child: const Text(
-                        "Skip",
+                        'Skip',
                         style: TextStyle(color: Colors.grey),
                       ),
                     )

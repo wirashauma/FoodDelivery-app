@@ -77,7 +77,7 @@ class _DocumentScanScreenState extends State<DocumentScanScreen> {
       final recognizedText = await _textRecognizer.processImage(inputImage);
 
       // Validate document
-      bool isValid = _validateDocument(recognizedText.text, type);
+      final bool isValid = _validateDocument(recognizedText.text, type);
 
       if (isValid) {
         if (type == 'ktp') {

@@ -197,7 +197,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sticky Header with Search */}
-      <div className="sticky top-0 z-40 bg-gradient-to-r from-orange-500 to-red-500 shadow-lg">
+      <div className="sticky top-0 z-40 bg-linear-to-r from-orange-500 to-red-500 shadow-lg">
         <div className="px-4 py-3">
           {/* Search Bar */}
           <div className="flex items-center gap-3">
@@ -226,7 +226,7 @@ export default function ExplorePage() {
                 <ShoppingCart className="text-orange-500" size={24} />
               </div>
               {totalCartItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center animate-pulse">
                   {totalCartItems > 99 ? '99+' : totalCartItems}
                 </span>
               )}
@@ -243,7 +243,7 @@ export default function ExplorePage() {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`flex flex-col items-center min-w-[70px] p-2 rounded-xl transition-all ${
+                className={`flex flex-col items-center w-auto p-2 rounded-xl transition-all ${
                   selectedCategory === category
                     ? 'bg-orange-50 border-2 border-orange-500'
                     : 'bg-gray-50 border-2 border-transparent hover:bg-orange-50'
@@ -265,7 +265,7 @@ export default function ExplorePage() {
 
       {/* Flash Sale Banner */}
       <div className="px-4 py-3">
-        <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-4 text-white relative overflow-hidden">
+        <div className="bg-linear-to-r from-red-500 to-orange-500 rounded-xl p-4 text-white relative overflow-hidden">
           <div className="absolute right-0 top-0 opacity-20">
             <Image src="/fast_food.png" alt="" width={120} height={120} />
           </div>
@@ -448,7 +448,7 @@ export default function ExplorePage() {
                   
                   {/* Content */}
                   <div className="p-3">
-                    <h3 className="font-medium text-gray-800 text-sm line-clamp-2 min-h-[40px]">
+                    <h3 className="font-medium text-gray-800 text-sm line-clamp-2 min-h-10">
                       {product.nama}
                     </h3>
                     
@@ -474,7 +474,7 @@ export default function ExplorePage() {
                       {quantity === 0 ? (
                         <button
                           onClick={() => addToCart(product)}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 rounded-lg text-sm font-medium hover:from-orange-600 hover:to-red-600 transition-all flex items-center justify-center gap-1"
+                          className="w-full bg-linear-to-r from-orange-500 to-red-500 text-white py-2 rounded-lg text-sm font-medium hover:from-orange-600 hover:to-red-600 transition-all flex items-center justify-center gap-1"
                         >
                           <Plus size={16} />
                           Tambah
@@ -509,7 +509,7 @@ export default function ExplorePage() {
       {totalCartItems > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-50">
           <Link href="/user/cart">
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-4 shadow-2xl flex items-center justify-between text-white">
+            <div className="bg-linear-to-r from-orange-500 to-red-500 rounded-2xl p-4 shadow-2xl flex items-center justify-between text-white">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-xl">
                   <ShoppingCart size={24} />

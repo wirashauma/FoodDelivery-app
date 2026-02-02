@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminDeliverersAPI, adminVerificationAPI } from '@/lib/api';
+import { adminDeliverersAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import FilterBar from '@/components/admin/FilterBar';
@@ -13,12 +13,10 @@ import {
   Plus,
   UserX,
   UserCheck,
-  Edit,
   Eye,
   Download,
   Bike,
   CheckCircle,
-  Clock,
   AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -39,14 +37,6 @@ interface Deliverer {
   totalEarnings: number;
   createdAt: string;
   lastActive?: string;
-}
-
-interface DeliverersResponse {
-  items: Deliverer[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 
 interface DeliverersOverview {
@@ -77,6 +67,7 @@ export default function DeliversManagementPage() {
   useEffect(() => {
     fetchDeliverers();
     fetchOverview();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filters]);
 
   const fetchDeliverers = async () => {
@@ -141,7 +132,7 @@ export default function DeliversManagementPage() {
   };
 
   const handleExport = async () => {
-    toast.info('Export feature coming soon');
+    toast('Export feature coming soon', { icon: 'ℹ️' });
   };
 
   const formatCurrency = (value: number) => {

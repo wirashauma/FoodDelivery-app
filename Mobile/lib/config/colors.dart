@@ -85,8 +85,6 @@ class AppColors {
   );
 
   static const LinearGradient promoGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
     colors: [Color(0xFFE53935), Color(0xFFFF6B6B)],
   );
 }

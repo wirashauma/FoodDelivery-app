@@ -147,7 +147,6 @@ class _DelivererOnboardingScreenState extends State<DelivererOnboardingScreen> {
                 dotHeight: 10,
                 dotWidth: 10,
                 activeDotColor: Color(0xFFE53935),
-                dotColor: Colors.grey,
               ),
             ),
             const SizedBox(height: 30),

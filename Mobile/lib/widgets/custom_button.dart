@@ -34,7 +34,7 @@ class CustomButton extends StatelessWidget {
     final bgColor = backgroundColor ?? AppColors.primary;
     final fgColor = textColor ?? (isOutlined ? bgColor : Colors.white);
 
-    Widget buttonChild = isLoading
+    final Widget buttonChild = isLoading
         ? SizedBox(
             width: 24,
             height: 24,
