@@ -4,6 +4,7 @@ const cors = require('cors'); // Import CORS
 const http = require('http'); // Import http
 const path = require('path'); // Import path for static files
 const jwt = require('jsonwebtoken'); // Import jwt for socket auth
+const helmet = require('helmet'); // Import helmet for security headers
 const { Server } = require("socket.io"); // Import socket.io
 const { PrismaClient } = require('@prisma/client'); // Import Prisma
 
@@ -54,8 +55,30 @@ io.use((socket, next) => {
   }
 });
 
-// Enable CORS for all origins
+// ==================== SECURITY MIDDLEWARE ====================
+// 1. Helmet - Secure HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding for uploads
+}));
+
+// 2. CORS - Cross-Origin Resource Sharing
 app.use(cors(corsOptions));
+
+// 3. Rate Limiting - Import rate limiters
+const { generalLimiter } = require('./middleware/rateLimiter');
+
+// Apply general rate limiter to all routes
+app.use('/api/', generalLimiter);
+
+// 4. Body Parser
 app.use(express.json());
 
 // Serve static files from uploads directory
@@ -90,6 +113,7 @@ const cartRoutes = require('./routes/cart');
 const enhancedAuthRoutes = require('./routes/enhancedAuth');
 const masterDataRoutes = require('./routes/masterData');
 const notificationRoutes = require('./routes/notification');
+const paymentRoutes = require('./routes/payment');
 
 // ==================== EXISTING API ENDPOINTS ====================
 app.use('/api/auth', authRoutes);
@@ -139,6 +163,13 @@ app.use('/api/master', masterDataRoutes);
 
 // Notifications
 app.use('/api/notifications', notificationRoutes);
+
+// Payment & Routing
+app.use('/api/payment', paymentRoutes);
+
+// Wallet & Digital Balance
+const walletRoutes = require('./routes/wallet');
+app.use('/api/wallet', walletRoutes);
 
 app.get('/', (req, res) => {
   res.send('Halo, ini adalah server backend "Titipin" Professional Edition (REST API + WebSocket + OMS)!');
@@ -365,9 +396,43 @@ app.use((err, req, res, next) => {
 // Make io accessible to controllers
 app.set('io', io);
 
+// ==================== INITIALIZE SERVICES ====================
+// Initialize Redis and Queue workers
+const { redis } = require('./lib/redis');
+const { workers } = require('./lib/queue');
+
+// Graceful shutdown handler
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  
+  // Close workers gracefully
+  const workerNames = Object.keys(workers);
+  for (const name of workerNames) {
+    await workers[name].close();
+  }
+  
+  // Close Redis connection
+  await redis.quit();
+  
+  // Close Prisma connection
+  await prisma.$disconnect();
+  
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
 server.listen(port, () => {
   console.log(`🚀 Titipin Professional Backend running at http://localhost:${port}`);
   console.log(`📡 Real-time WebSocket enabled`);
+  console.log(`💼 Advanced Features:`);
+  console.log(`   ✅ Security: Helmet + Rate Limiting`);
+  console.log(`   ✅ Caching: Redis`);
+  console.log(`   ✅ Queue: BullMQ`);
+  console.log(`   ${config.payment.midtrans.isConfigured ? '✅' : '⚠️ '} Payment: Midtrans ${config.payment.midtrans.isConfigured ? '' : '(not configured)'}`);
+  console.log(`   ${config.maps.mapbox.isConfigured ? '✅' : '📍'} Routing: ${config.maps.mapbox.isConfigured ? 'Mapbox' : 'OSRM (free)'}`);
+  console.log(`   ${config.firebase.isConfigured ? '✅' : '⚠️ '} Push Notifications: Firebase ${config.firebase.isConfigured ? '' : '(not configured)'}`);
+});
   console.log(`📊 OMS, Financial, Promo engines active`);
   console.log(`🔒 Environment: ${config.server.nodeEnv}`);
 });

@@ -128,6 +128,67 @@ const config = {
       requireNumber: true,
     },
   },
+
+  // Redis Configuration
+  redis: {
+    get host() {
+      return process.env.REDIS_HOST || 'localhost';
+    },
+    get port() {
+      return parseInt(process.env.REDIS_PORT, 10) || 6379;
+    },
+    get password() {
+      return process.env.REDIS_PASSWORD || undefined;
+    },
+  },
+
+  // Payment Gateway Configuration
+  payment: {
+    midtrans: {
+      get serverKey() {
+        return process.env.MIDTRANS_SERVER_KEY || null;
+      },
+      get clientKey() {
+        return process.env.MIDTRANS_CLIENT_KEY || null;
+      },
+      get isProduction() {
+        return process.env.MIDTRANS_IS_PRODUCTION === 'true';
+      },
+      get isConfigured() {
+        return !!(this.serverKey && this.clientKey);
+      },
+    },
+  },
+
+  // Maps & Route Configuration
+  maps: {
+    // OSRM (Open Source Routing Machine) - Free alternative
+    osrm: {
+      get baseUrl() {
+        // Default to public OSRM server (can self-host for production)
+        return process.env.OSRM_BASE_URL || 'https://router.project-osrm.org';
+      },
+    },
+    // Mapbox (Paid but more accurate)
+    mapbox: {
+      get accessToken() {
+        return process.env.MAPBOX_ACCESS_TOKEN || null;
+      },
+      get isConfigured() {
+        return !!this.accessToken;
+      },
+    },
+  },
+
+  // Firebase Configuration (for FCM Push Notifications)
+  firebase: {
+    get serviceAccountPath() {
+      return process.env.FIREBASE_SERVICE_ACCOUNT_PATH || null;
+    },
+    get isConfigured() {
+      return !!this.serviceAccountPath;
+    },
+  },
 };
 
 module.exports = {

@@ -1,103 +1,88 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { dashboardAPI } from '@/lib/api';
+import { 
+  adminDashboardAPI, 
+  adminUsersAPI, 
+  adminOrdersAPI, 
+  adminDeliverersAPI 
+} from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import StatCard from '@/components/admin/StatCard';
+import DataTable, { Column } from '@/components/admin/DataTable';
+import StatusBadge from '@/components/admin/StatusBadge';
 import {
   Users,
   Bike,
   DollarSign,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
+  ShoppingCart,
   Package,
-  Star,
-  Activity,
-  Zap,
-  Target,
+  TrendingUp,
+  Store,
+  Clock,
 } from 'lucide-react';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-} from 'recharts';
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 
-interface RecentOrder {
-  order_id: number;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  user?: { username: string };
+interface DashboardStats {
+  users: {
+    total: number;
+    active: number;
+    inactive: number;
+    newThisMonth: number;
+  };
+  merchants: {
+    total: number;
+    active: number;
+    pendingVerification: number;
+  };
+  deliverers: {
+    total: number;
+    active: number;
+    inactive: number;
+    available: number;
+  };
+  orders: {
+    total: number;
+    today: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    cancelled: number;
+  };
+  revenue: {
+    total: number;
+    today: number;
+    thisMonth: number;
+    platformEarnings: number;
+  };
 }
 
 interface TopDeliverer {
   id: number;
   name: string;
   email: string;
-  avatar: string | null;
-  orders: number;
+  completedOrders: number;
+  totalEarnings: number;
   rating: number;
-  earnings: number;
 }
 
-interface DashboardStats {
-  users: {
-    total: number;
-    newThisMonth: number;
-    growth: number;
+interface RecentOrder {
+  id: number;
+  orderNumber: string;
+  customer: {
+    id: number;
+    name: string;
   };
-  deliverers: {
-    total: number;
-    growth: number;
+  merchant: {
+    id: number;
+    businessName: string;
   };
-  orders: {
-    total: number;
-    completed: number;
-    pending: number;
-    cancelled: number;
-    today: number;
-    thisWeek: number;
-    thisMonth: number;
-    growth: number;
-  };
-  revenue: {
-    total: number;
-    growth: number;
-  };
-  ratings: {
-    average: number;
-    total: number;
-  };
-  satisfaction: number;
-  recentOrders: RecentOrder[];
+  status: string;
+  totalAmount: number;
+  createdAt: string;
 }
-
-// Elegant Stats Card Component
-function ElegantStatsCard({
-  title,
-  value,
-  icon: Icon,
-  trend,
-  color,
-  subtitle,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  trend?: { value: number; isPositive: boolean };
-  color: 'primary' | 'blue' | 'orange' | 'purple' | 'pink' | 'cyan';
-  subtitle?: string;
-}) {
-  const colorStyles = {
     primary: {
       bg: 'bg-gradient-to-br from-primary-500 to-primary-700',
       shadow: 'shadow-primary-500/20',

@@ -30,13 +30,13 @@ class _SignInScreenState extends State<SignInScreen> {
   // ignore: unused_field
   static const _quickLogins = [
     {
-      'email': 'wira@gmail.com',
+      'email': 'shauma@gmail.com',
       'password': 'Wira1234',
       'role': 'Customer',
       'icon': Icons.person
     },
     {
-      'email': 'shauma@gmail.com',
+      'email': 'wira@gmail.com',
       'password': 'Wira1234',
       'role': 'Deliverer',
       'icon': Icons.delivery_dining

@@ -13,19 +13,46 @@
 
 ## 🌟 Key Features (Fitur Utama)
 
-### 👤 Dual-Role System
-Aplikasi ini mendukung dua peran dalam satu akun dengan pengalaman UX yang berbeda:
-* **Customer:** Menjelajah menu kantin, mengelola keranjang belanja, melakukan pemesanan, dan melacak status pesanan.
-* **Deliverer:** Dashboard khusus untuk melihat pesanan masuk, menerima/menolak *job* pengiriman, dan update status pesanan.
+### 👤 Multi-Role System (8 Roles)
+Aplikasi mendukung 8 role berbeda dengan hak akses tersendiri:
+* **Customer:** Browse products, shopping cart, order tracking
+* **Deliverer:** Available orders, active jobs, earnings dashboard
+* **Merchant:** Product management, order management, payouts
+* **Admin:** Full system access, user management, analytics
+* **SUPER_ADMIN:** Ultimate control, system configuration
+* **OPERATIONS_STAFF:** Order & driver management
+* **FINANCE_STAFF:** Financial reports, payouts approval
+* **CUSTOMER_SERVICE:** Complaint handling, support tickets
 
 ### 💬 Real-Time Interaction
-* **Live Chat:** Komunikasi instan antara Customer dan Deliverer menggunakan **Socket.IO**.
-* **Status Updates:** Notifikasi status pesanan (Diterima, Diproses, Diantar) secara *real-time* tanpa perlu refresh halaman.
+* **Live Chat:** Socket.IO untuk komunikasi Customer ↔ Deliverer
+* **Status Updates:** Real-time order tracking tanpa refresh
+* **Driver Location:** Live GPS tracking untuk delivery monitoring
+
+### 🗺️ **NEW!** Logistics & Location Intelligence
+* **Geo-Fencing:** Driver hanya lihat orderan dalam radius 5-10km (PostGIS)
+* **Route Optimization:** Hitung jarak & waktu tempuh nyata (OSRM/Mapbox)
+* **Smart Pricing:** Delivery fee berdasarkan jarak aktual, bukan garis lurus
+* **Real-time Tracking:** Redis GeoSet untuk driver location updates
+
+### 💳 **NEW!** Payment & Financial System
+* **Payment Gateway:** Integrasi Midtrans (E-Wallet, VA, QRIS, Credit Card)
+* **Digital Wallet:** Internal wallet system dengan double-entry bookkeeping
+* **Automated Payouts:** Merchant & driver payout management
+* **Transaction History:** Complete audit trail
+
+### 🚀 **NEW!** Performance & Scalability
+* **Redis Caching:** 10x faster API responses untuk data yang sering diakses
+* **Message Queue:** Background jobs (email, notifications, reports) dengan BullMQ
+* **Rate Limiting:** Prevent abuse dengan request limiting per IP
+* **Full-Text Search:** Fuzzy search dengan typo tolerance (PostgreSQL)
 
 ### 🔐 Enterprise-Grade Security
-* **JWT Authentication:** Login aman dengan token-based access control.
-* **Secure Storage:** Token dan data sensitif disimpan menggunakan `flutter_secure_storage` (Keychain di iOS / Keystore di Android).
-* **Role-Based Routing:** Navigasi otomatis yang membedakan hak akses antarmuka Customer dan Deliverer.
+* **JWT Authentication:** Token-based dengan refresh mechanism
+* **HTTP Security:** Helmet.js untuk XSS, clickjacking protection
+* **Rate Limiting:** Brute force prevention (5 login attempts / 15 min)
+* **Webhook Verification:** Midtrans signature validation
+* **Secure Storage:** Flutter secure storage untuk sensitive data
 
 ---
 
@@ -36,11 +63,17 @@ Proyek ini dibangun menggunakan arsitektur *Full-Stack* modern:
 | Component | Technology | Description |
 | :--- | :--- | :--- |
 | **Mobile App** | **Flutter (Dart)** | Cross-platform UI, Provider/Bloc State Management |
+| **Web Frontend** | **Next.js 15 + TypeScript** | React App Router, Tailwind CSS v4 |
 | **Backend API** | **Node.js & Express** | RESTful API Architecture |
 | **Database** | **PostgreSQL (Supabase)** | Managed PostgreSQL with Connection Pooling |
 | **ORM** | **Prisma** | Type-safe database client & migration tool |
 | **Real-time** | **Socket.IO** | WebSocket protocol for live chat & updates |
-| **Security** | **Bcrypt & JWT** | Hashing password & Session management |
+| **Caching** | **Redis** | In-memory caching & geo-spatial queries |
+| **Queue** | **BullMQ** | Background job processing |
+| **Payment** | **Midtrans** | Payment gateway integration |
+| **Maps** | **OSRM / Mapbox** | Route optimization & distance calculation |
+| **GIS** | **PostGIS** | Geospatial database extension |
+| **Security** | **Bcrypt, JWT, Helmet** | Hashing, authentication & HTTP security |
 
 ---
 

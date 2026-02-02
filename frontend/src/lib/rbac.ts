@@ -199,7 +199,7 @@ export const QUICK_LOGIN_ACCOUNTS = [
     color: 'from-orange-500 to-red-600' 
   },
   { 
-    email: 'wira@gmail.com', 
+    email: 'shauma@gmail.com', 
     password: 'Wira1234', 
     role: 'CUSTOMER' as UserRole, 
     label: 'Customer', 
@@ -207,11 +207,11 @@ export const QUICK_LOGIN_ACCOUNTS = [
     color: 'from-blue-500 to-cyan-600' 
   },
   { 
-    email: 'shauma@gmail.com', 
-    password: 'Wira1234', 
-    role: 'DELIVERER' as UserRole, 
-    label: 'Driver', 
-    icon: 'Truck',
+    email: 'admin@gmail.com', 
+    password: 'Admin123', 
+    role: 'ADMIN' as UserRole, 
+    label: 'Admin', 
+    icon: 'User',
     color: 'from-green-500 to-emerald-600' 
   },
 ];

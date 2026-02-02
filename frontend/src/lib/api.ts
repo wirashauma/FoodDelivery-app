@@ -713,4 +713,219 @@ export const merchantAPI = {
   },
 };
 
+// ============================================
+// ADMIN API - For ADMIN role
+// ============================================
+
+// Admin Dashboard API
+export const adminDashboardAPI = {
+  getStats: async () => {
+    const response = await api.get('/admin/dashboard/stats');
+    return response.data?.data || response.data;
+  },
+  getTopDeliverers: async () => {
+    const response = await api.get('/admin/dashboard/top-deliverers');
+    return response.data?.data || response.data;
+  },
+};
+
+// Admin Users API
+export const adminUsersAPI = {
+  getAll: async (params?: { 
+    role?: string; 
+    status?: string; 
+    search?: string;
+    page?: number; 
+    limit?: number;
+  }) => {
+    const response = await api.get('/admin/users', { params });
+    return response.data?.data || response.data;
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/admin/users/${id}`);
+    return response.data?.data || response.data;
+  },
+  update: async (id: number, data: {
+    email?: string;
+    role?: string;
+    isActive?: boolean;
+  }) => {
+    const response = await api.put(`/admin/users/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/admin/users/${id}`);
+    return response.data;
+  },
+  toggleStatus: async (id: number) => {
+    const response = await api.put(`/admin/users/${id}/status`);
+    return response.data;
+  },
+};
+
+// Admin Deliverers API
+export const adminDeliverersAPI = {
+  getAll: async (params?: { 
+    status?: string; 
+    search?: string;
+    page?: number; 
+    limit?: number;
+  }) => {
+    const response = await api.get('/admin/deliverers', { params });
+    return response.data?.data || response.data;
+  },
+  getOverview: async () => {
+    const response = await api.get('/admin/deliverers/overview');
+    return response.data?.data || response.data;
+  },
+  register: async (data: {
+    email: string;
+    password: string;
+    name: string;
+    phone: string;
+    vehicleType: string;
+    vehicleNumber: string;
+  }) => {
+    const response = await api.post('/admin/deliverers/register', data);
+    return response.data;
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/admin/deliverers/${id}`);
+    return response.data?.data || response.data;
+  },
+  update: async (id: number, data: Record<string, unknown>) => {
+    const response = await api.put(`/admin/deliverers/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/admin/deliverers/${id}`);
+    return response.data;
+  },
+  getStats: async (id: number) => {
+    const response = await api.get(`/admin/deliverers/${id}/stats`);
+    return response.data?.data || response.data;
+  },
+  getPerformance: async (id: number) => {
+    const response = await api.get(`/admin/deliverers/${id}/performance`);
+    return response.data?.data || response.data;
+  },
+  toggleStatus: async (id: number) => {
+    const response = await api.put(`/admin/deliverers/${id}/status`);
+    return response.data;
+  },
+};
+
+// Admin Verification API
+export const adminVerificationAPI = {
+  getStats: async () => {
+    const response = await api.get('/admin/verification/stats');
+    return response.data?.data || response.data;
+  },
+  getPending: async () => {
+    const response = await api.get('/admin/verification/pending');
+    return response.data?.data || response.data;
+  },
+  getDetail: async (id: number) => {
+    const response = await api.get(`/admin/verification/${id}`);
+    return response.data?.data || response.data;
+  },
+  activateDeliverer: async (id: number) => {
+    const response = await api.put(`/admin/verification/${id}/activate`);
+    return response.data;
+  },
+  verifyDocument: async (id: number, data: { status: string; notes?: string }) => {
+    const response = await api.put(`/admin/documents/${id}/verify`, data);
+    return response.data;
+  },
+};
+
+// Admin Orders API
+export const adminOrdersAPI = {
+  getAll: async (params?: { 
+    status?: string; 
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number; 
+    limit?: number;
+  }) => {
+    const response = await api.get('/admin/orders', { params });
+    return response.data?.data || response.data;
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/admin/orders/${id}`);
+    return response.data?.data || response.data;
+  },
+  updateStatus: async (id: number, status: string) => {
+    const response = await api.put(`/admin/orders/${id}/status`, { status });
+    return response.data;
+  },
+  getByStatus: async (status: string) => {
+    const response = await api.get(`/admin/orders/status/${status}`);
+    return response.data?.data || response.data;
+  },
+};
+
+// Admin Earnings API
+export const adminEarningsAPI = {
+  getSummary: async (params?: { startDate?: string; endDate?: string }) => {
+    const response = await api.get('/admin/earnings/summary', { params });
+    return response.data?.data || response.data;
+  },
+  getDelivererEarnings: async (params?: { 
+    delivererId?: number; 
+    startDate?: string; 
+    endDate?: string;
+  }) => {
+    const response = await api.get('/admin/earnings/deliverers', { params });
+    return response.data?.data || response.data;
+  },
+  getDaily: async (params?: { date?: string }) => {
+    const response = await api.get('/admin/earnings/daily', { params });
+    return response.data?.data || response.data;
+  },
+  getMonthly: async (params?: { year?: number; month?: number }) => {
+    const response = await api.get('/admin/earnings/monthly', { params });
+    return response.data?.data || response.data;
+  },
+};
+
+// Admin Reports API
+export const adminReportsAPI = {
+  getUsers: async (params?: { startDate?: string; endDate?: string }) => {
+    const response = await api.get('/admin/reports/users', { params });
+    return response.data?.data || response.data;
+  },
+  getOrders: async (params?: { startDate?: string; endDate?: string }) => {
+    const response = await api.get('/admin/reports/orders', { params });
+    return response.data?.data || response.data;
+  },
+  exportUsers: async () => {
+    const response = await api.get('/admin/export/users', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+  exportOrders: async () => {
+    const response = await api.get('/admin/export/orders', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+  exportDeliverers: async () => {
+    const response = await api.get('/admin/export/deliverers', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+};
+
+// Admin Notifications API
+export const adminNotificationsAPI = {
+  getAll: async () => {
+    const response = await api.get('/admin/notifications');
+    return response.data?.data || response.data;
+  },
+};
+
 export default api;

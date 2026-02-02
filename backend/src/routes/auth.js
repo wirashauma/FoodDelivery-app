@@ -3,14 +3,15 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { authLimiter } = require('../middleware/rateLimiter');
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
+// Public routes - Apply auth rate limiter to prevent brute force
+router.post('/register', authLimiter, authController.register);
+router.post('/login', authLimiter, authController.login);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', authController.logout);
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password', authController.resetPassword);
+router.post('/forgot-password', authLimiter, authController.forgotPassword);
+router.post('/reset-password', authLimiter, authController.resetPassword);
 
 // Protected routes
 router.post('/logout-all', authMiddleware.verifyToken, authController.logoutAll);
