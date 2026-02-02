@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -73,7 +73,7 @@ const menuGroups: MenuGroup[] = [
         icon: Building2,
         children: [
           { name: 'Daftar Merchant', href: '/merchants', icon: Store },
-          { name: 'Verifikasi', href: '/merchants/verification', icon: ClipboardList },
+          { name: 'Verifikasi', href: '/merchants?filter=pending', icon: ClipboardList },
         ]
       },
       { 
@@ -93,9 +93,9 @@ const menuGroups: MenuGroup[] = [
         name: 'Promo & Banner', 
         icon: BadgePercent,
         children: [
-          { name: 'Banner', href: '/promos/banners', icon: Image },
+          { name: 'Banner', href: '/promos?tab=banners', icon: Image },
           { name: 'Promo', href: '/promos', icon: BadgePercent },
-          { name: 'Voucher', href: '/promos/vouchers', icon: Ticket },
+          { name: 'Voucher', href: '/promos?tab=vouchers', icon: Ticket },
         ]
       },
     ],
@@ -108,9 +108,9 @@ const menuGroups: MenuGroup[] = [
         icon: Wallet,
         children: [
           { name: 'Overview', href: '/financial', icon: TrendingUp },
-          { name: 'Payout Merchant', href: '/financial/merchant-payouts', icon: Building2 },
-          { name: 'Payout Driver', href: '/financial/driver-payouts', icon: Truck },
-          { name: 'Refund', href: '/financial/refunds', icon: DollarSign },
+          { name: 'Payout Merchant', href: '/financial?tab=merchant', icon: Building2 },
+          { name: 'Payout Driver', href: '/financial?tab=driver', icon: Truck },
+          { name: 'Refund', href: '/financial?tab=refund', icon: DollarSign },
         ]
       },
       { name: 'Pendapatan', href: '/earnings', icon: DollarSign },
@@ -124,9 +124,9 @@ const menuGroups: MenuGroup[] = [
         icon: Database,
         children: [
           { name: 'Kategori', href: '/master-data/categories', icon: Tag },
-          { name: 'Jenis Masakan', href: '/master-data/cuisine-types', icon: UtensilsCrossed },
-          { name: 'Zona Pengiriman', href: '/master-data/delivery-zones', icon: MapPin },
-          { name: 'Pengaturan Sistem', href: '/master-data/settings', icon: Cog },
+          { name: 'Jenis Masakan', href: '/master-data/categories?tab=cuisines', icon: UtensilsCrossed },
+          { name: 'Zona Pengiriman', href: '/master-data/categories?tab=zones', icon: MapPin },
+          { name: 'Pengaturan Sistem', href: '/master-data/categories?tab=settings', icon: Cog },
         ]
       },
     ],
@@ -152,9 +152,15 @@ const secondaryMenuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useSidebar();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+
+  // Build current full URL path with query params for comparison
+  const currentFullPath = searchParams.toString() 
+    ? `${pathname}?${searchParams.toString()}` 
+    : pathname;
 
   const handleLogout = () => {
     authAPI.logout();
@@ -172,12 +178,53 @@ export default function Sidebar() {
     }));
   };
 
-  const isMenuActive = (item: MenuItem): boolean => {
-    if (item.href) {
-      return pathname === item.href || pathname.startsWith(item.href + '/');
+  // Helper: Check if a menu item href matches current URL
+  // Handles both path-only and path+query comparisons
+  const isHrefActive = (href: string): boolean => {
+    // Parse the href to separate path and query
+    const [hrefPath, hrefQuery] = href.split('?');
+    
+    // If href has no query params, check only pathname match
+    if (!hrefQuery) {
+      // Exact pathname match AND no query params in current URL that would indicate a different tab
+      return pathname === hrefPath && !searchParams.has('tab') && !searchParams.has('filter');
     }
+    
+    // If href has query params, check full match
+    const hrefParams = new URLSearchParams(hrefQuery);
+    
+    // Check if pathname matches
+    if (pathname !== hrefPath) return false;
+    
+    // Check if all href query params exist in current URL
+    for (const [key, value] of hrefParams.entries()) {
+      if (searchParams.get(key) !== value) return false;
+    }
+    
+    return true;
+  };
+
+  // Check if a menu item (with href) is the active page
+  const isItemActive = (item: MenuItem): boolean => {
+    if (!item.href) return false;
+    return isHrefActive(item.href);
+  };
+
+  // Check if a parent menu contains the active child
+  const isParentActive = (item: MenuItem): boolean => {
+    if (!item.children) return false;
+    return item.children.some(child => child.href && isHrefActive(child.href));
+  };
+
+  // Combined check for menu active state (used for highlighting)
+  const isMenuActive = (item: MenuItem): boolean => {
+    // For items with direct href, check if active
+    if (item.href) {
+      return isHrefActive(item.href);
+    }
+    // For parent menus, check if any child is active
     if (item.children) {
-      return item.children.some(child => child.href && (pathname === child.href || pathname.startsWith(child.href + '/')));
+      return item.children.some(child => child.href && isHrefActive(child.href));
     }
     return false;
   };
@@ -189,8 +236,12 @@ export default function Sidebar() {
     if (expandedMenus[item.name] !== undefined) {
       return expandedMenus[item.name];
     }
-    // Auto-expand if has active child
-    return item.children.some(child => child.href && (pathname === child.href || pathname.startsWith(child.href + '/')));
+    // Auto-expand if current path matches any child's base path
+    return item.children.some(child => {
+      if (!child.href) return false;
+      const [childPath] = child.href.split('?');
+      return pathname === childPath || pathname.startsWith(childPath + '/');
+    });
   };
 
   const renderMenuItem = (item: MenuItem, isChild: boolean = false) => {
@@ -204,13 +255,13 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={(e) => toggleSubmenu(item.name, e)}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors w-full
               ${isActive
                 ? 'bg-primary-50 text-primary-600'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
           >
-            <div className={`p-2 rounded-lg transition-colors shrink-0 ${
+            <div className={`p-2 rounded-lg shrink-0 ${
               isActive 
                 ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30' 
                 : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
@@ -223,8 +274,8 @@ export default function Sidebar() {
             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
           <div 
-            className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-200 ${
-              isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            className={`ml-4 mt-1 space-y-1 overflow-hidden ${
+              isExpanded ? 'block' : 'hidden'
             }`}
           >
             {item.children!.map(child => renderMenuItem(child, true))}
@@ -237,21 +288,21 @@ export default function Sidebar() {
       <Link
         key={item.href || item.name}
         href={item.href!}
-        className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative
+        prefetch={false}
+        className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors relative
           ${isChild ? 'ml-2' : ''}
           ${isActive
             ? 'bg-primary-50 text-primary-600'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
-        onClick={(e) => {
-          e.stopPropagation();
+        onClick={() => {
           closeMobileMenu();
         }}
       >
         {isActive && !isChild && (
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary-500 rounded-r-full" />
         )}
-        <div className={`p-2 rounded-lg transition-colors shrink-0 ${
+        <div className={`p-2 rounded-lg shrink-0 ${
           isActive 
             ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30' 
             : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
@@ -291,7 +342,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white shadow-xl z-40 transform transition-all duration-300 ease-in-out border-r border-gray-100
+        className={`fixed top-0 left-0 h-full bg-white shadow-xl z-40 transform transition-transform duration-150 ease-out border-r border-gray-100
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:w-64 w-64`}
       >
         <div className="flex flex-col h-full">
@@ -329,7 +380,8 @@ export default function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+                  prefetch={false}
+                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors
                     ${
                       isActive
                         ? 'bg-primary-50 text-primary-600'

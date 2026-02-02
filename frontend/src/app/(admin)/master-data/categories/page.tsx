@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Tag, 
   UtensilsCrossed, 
@@ -65,9 +66,20 @@ function formatCurrency(amount: number) {
 }
 
 export default function MasterDataCategoriesPage() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'categories' | 'cuisines' | 'zones' | 'settings'>('categories');
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Set active tab from URL query parameter
+  useEffect(() => {
+    if (tabParam === 'cuisines' || tabParam === 'zones' || tabParam === 'settings') {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('categories');
+    }
+  }, [tabParam]);
 
   const tabs = [
     { id: 'categories', label: 'Kategori', icon: Tag, count: dummyCategories.length },

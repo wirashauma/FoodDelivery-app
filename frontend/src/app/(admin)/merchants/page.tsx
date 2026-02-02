@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Store, 
   Search, 
@@ -135,10 +136,23 @@ const statusColors: Record<MerchantStatus, { bg: string; text: string; label: st
 };
 
 export default function MerchantsPage() {
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
   const [merchants, setMerchants] = useState(dummyMerchants);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Set status filter from URL query parameter
+  useEffect(() => {
+    if (filterParam === 'pending') {
+      setStatusFilter('PENDING');
+    } else if (filterParam) {
+      setStatusFilter(filterParam.toUpperCase());
+    } else {
+      setStatusFilter('all');
+    }
+  }, [filterParam]);
 
   const filteredMerchants = merchants.filter(merchant => {
     const matchesSearch = merchant.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -122,7 +123,18 @@ function StatCard({
 }
 
 export default function FinancialPage() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'overview' | 'merchant' | 'driver' | 'refund'>('overview');
+
+  // Set active tab from URL query parameter
+  useEffect(() => {
+    if (tabParam === 'merchant' || tabParam === 'driver' || tabParam === 'refund') {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [tabParam]);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: PieChart },

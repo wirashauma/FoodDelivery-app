@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   BadgePercent, 
   Image as ImageIcon, 
@@ -174,8 +175,19 @@ function formatCurrency(amount: number) {
 }
 
 export default function PromosPage() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<'promos' | 'banners' | 'vouchers'>('promos');
   const [search, setSearch] = useState('');
+
+  // Set active tab from URL query parameter
+  useEffect(() => {
+    if (tabParam === 'banners' || tabParam === 'vouchers') {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab('promos');
+    }
+  }, [tabParam]);
 
   const tabs = [
     { id: 'promos', label: 'Promo', icon: BadgePercent, count: dummyPromos.length },

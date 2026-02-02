@@ -1,14 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import { redirect, usePathname } from 'next/navigation';
+import { redirect, usePathname, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 
-// Page title mapping
+// Page title mapping - supports both pathname and pathname with query params
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   // Dashboard
   '/dashboard': { title: 'Overview', subtitle: 'Ringkasan bisnis dan statistik terbaru' },
@@ -19,7 +19,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   
   // Merchants
   '/merchants': { title: 'Daftar Merchant', subtitle: 'Kelola merchant dan restoran mitra' },
-  '/merchants/verification': { title: 'Verifikasi Merchant', subtitle: 'Verifikasi dokumen dan kelola status merchant' },
+  '/merchants?filter=pending': { title: 'Verifikasi Merchant', subtitle: 'Verifikasi dokumen dan kelola status merchant' },
   
   // Deliverers
   '/deliverers': { title: 'Daftar Driver', subtitle: 'Kelola driver dan kurir mitra' },
@@ -27,21 +27,21 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   
   // Promos & Marketing
   '/promos': { title: 'Promo', subtitle: 'Kelola kampanye promosi dan diskon' },
-  '/promos/banners': { title: 'Banner', subtitle: 'Kelola banner promosi di aplikasi' },
-  '/promos/vouchers': { title: 'Voucher', subtitle: 'Kelola dan generate kode voucher' },
+  '/promos?tab=banners': { title: 'Banner', subtitle: 'Kelola banner promosi di aplikasi' },
+  '/promos?tab=vouchers': { title: 'Voucher', subtitle: 'Kelola dan generate kode voucher' },
   
   // Financial
   '/financial': { title: 'Financial Overview', subtitle: 'Ringkasan keuangan dan laporan' },
-  '/financial/merchant-payouts': { title: 'Payout Merchant', subtitle: 'Kelola pembayaran ke merchant' },
-  '/financial/driver-payouts': { title: 'Payout Driver', subtitle: 'Kelola pembayaran ke driver' },
-  '/financial/refunds': { title: 'Refund', subtitle: 'Kelola permintaan pengembalian dana' },
+  '/financial?tab=merchant': { title: 'Payout Merchant', subtitle: 'Kelola pembayaran ke merchant' },
+  '/financial?tab=driver': { title: 'Payout Driver', subtitle: 'Kelola pembayaran ke driver' },
+  '/financial?tab=refund': { title: 'Refund', subtitle: 'Kelola permintaan pengembalian dana' },
   '/earnings': { title: 'Pendapatan', subtitle: 'Laporan pendapatan dan revenue' },
   
   // Master Data
   '/master-data/categories': { title: 'Kategori', subtitle: 'Kelola kategori produk dan merchant' },
-  '/master-data/cuisine-types': { title: 'Jenis Masakan', subtitle: 'Kelola jenis masakan dan cuisine' },
-  '/master-data/delivery-zones': { title: 'Zona Pengiriman', subtitle: 'Kelola area dan biaya pengiriman' },
-  '/master-data/settings': { title: 'Pengaturan Sistem', subtitle: 'Konfigurasi sistem dan parameter' },
+  '/master-data/categories?tab=cuisines': { title: 'Jenis Masakan', subtitle: 'Kelola jenis masakan dan cuisine' },
+  '/master-data/categories?tab=zones': { title: 'Zona Pengiriman', subtitle: 'Kelola area dan biaya pengiriman' },
+  '/master-data/categories?tab=settings': { title: 'Pengaturan Sistem', subtitle: 'Konfigurasi sistem dan parameter' },
   
   // Users & Support
   '/users': { title: 'Users', subtitle: 'Kelola akun pengguna' },
@@ -56,6 +56,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isCollapsed } = useSidebar();
   
   const isAuthenticated = useMemo(() => {
@@ -70,24 +71,37 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const pageInfo = useMemo(() => {
-    // First try exact match
+    // Build full path with query params
+    const queryString = searchParams.toString();
+    const fullPath = queryString ? `${pathname}?${queryString}` : pathname;
+    
+    // First try exact match with query params
+    if (pageTitles[fullPath]) {
+      return pageTitles[fullPath];
+    }
+    
+    // Then try pathname only match
     if (pageTitles[pathname]) {
       return pageTitles[pathname];
     }
+    
     // Then try to find the best matching parent route
     const matchingRoute = Object.keys(pageTitles)
-      .filter(route => pathname.startsWith(route))
+      .filter(route => {
+        const [routePath] = route.split('?');
+        return pathname.startsWith(routePath);
+      })
       .sort((a, b) => b.length - a.length)[0];
     
     return matchingRoute 
       ? pageTitles[matchingRoute] 
       : { title: 'Admin Panel', subtitle: '' };
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   return (
     <div className="min-h-screen bg-gray-50/50">
       <Sidebar />
-      <div className={`transition-all duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+      <div className={`${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <Header title={pageInfo.title} subtitle={pageInfo.subtitle} />
         <main className="p-3 sm:p-4 md:p-6">
           <ErrorBoundary>
