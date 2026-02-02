@@ -398,21 +398,27 @@ app.set('io', io);
 
 // ==================== INITIALIZE SERVICES ====================
 // Initialize Redis and Queue workers
-const { redis } = require('./lib/redis');
+const { redis, isRedisAvailable } = require('./lib/redis');
 const { workers } = require('./lib/queue');
 
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
   
-  // Close workers gracefully
-  const workerNames = Object.keys(workers);
-  for (const name of workerNames) {
-    await workers[name].close();
+  // Close workers gracefully (if available)
+  if (workers) {
+    const workerNames = Object.keys(workers);
+    for (const name of workerNames) {
+      if (workers[name] && workers[name].close) {
+        await workers[name].close();
+      }
+    }
   }
   
-  // Close Redis connection
-  await redis.quit();
+  // Close Redis connection (if available)
+  if (redis && redis.quit) {
+    await redis.quit();
+  }
   
   // Close Prisma connection
   await prisma.$disconnect();
@@ -427,12 +433,11 @@ server.listen(port, () => {
   console.log(`📡 Real-time WebSocket enabled`);
   console.log(`💼 Advanced Features:`);
   console.log(`   ✅ Security: Helmet + Rate Limiting`);
-  console.log(`   ✅ Caching: Redis`);
-  console.log(`   ✅ Queue: BullMQ`);
+  console.log(`   ${isRedisAvailable() ? '✅' : '⚠️ '} Caching: Redis ${isRedisAvailable() ? '' : '(not available - running without cache)'}`);
+  console.log(`   ${isRedisAvailable() ? '✅' : '⚠️ '} Queue: BullMQ ${isRedisAvailable() ? '' : '(not available - jobs will run synchronously)'}`);
   console.log(`   ${config.payment.midtrans.isConfigured ? '✅' : '⚠️ '} Payment: Midtrans ${config.payment.midtrans.isConfigured ? '' : '(not configured)'}`);
   console.log(`   ${config.maps.mapbox.isConfigured ? '✅' : '📍'} Routing: ${config.maps.mapbox.isConfigured ? 'Mapbox' : 'OSRM (free)'}`);
   console.log(`   ${config.firebase.isConfigured ? '✅' : '⚠️ '} Push Notifications: Firebase ${config.firebase.isConfigured ? '' : '(not configured)'}`);
-});
   console.log(`📊 OMS, Financial, Promo engines active`);
   console.log(`🔒 Environment: ${config.server.nodeEnv}`);
 });

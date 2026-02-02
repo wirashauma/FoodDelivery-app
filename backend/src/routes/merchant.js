@@ -205,7 +205,7 @@ router.get('/me/stats', authenticate, authorize('MERCHANT'), async (req, res) =>
     
     const merchant = await prisma.merchant.findFirst({
       where: { ownerId: userId },
-      select: { id: true, businessName: true, rating: true, reviewCount: true }
+      select: { id: true, businessName: true, averageRating: true, totalRatings: true }
     });
     
     if (!merchant) {
@@ -238,8 +238,8 @@ router.get('/me/stats', authenticate, authorize('MERCHANT'), async (req, res) =>
         merchant: {
           id: merchant.id,
           businessName: merchant.businessName,
-          rating: merchant.rating,
-          reviewCount: merchant.reviewCount
+          rating: merchant.averageRating,
+          reviewCount: merchant.totalRatings
         },
         stats: {
           totalOrders,

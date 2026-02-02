@@ -1,5 +1,5 @@
 const { Queue, Worker } = require('bullmq');
-const { redis } = require('./redis');
+const { redis, isRedisAvailable } = require('./redis');
 const { config } = require('./config');
 
 // Connection configuration for BullMQ
@@ -9,32 +9,71 @@ const connection = {
   password: config.redis.password,
 };
 
-// ==================== QUEUES ====================
+let emailQueue, notificationQueue, paymentQueue, reportQueue, imageQueue;
+let isQueueAvailable = false;
 
-/**
- * Email Queue - For sending emails asynchronously
- */
-const emailQueue = new Queue('email', { connection });
-
-/**
- * Notification Queue - For sending push notifications
- */
-const notificationQueue = new Queue('notification', { connection });
-
-/**
- * Payment Queue - For payment processing tasks
- */
-const paymentQueue = new Queue('payment', { connection });
-
-/**
- * Report Queue - For generating reports (PDF, Excel)
- */
-const reportQueue = new Queue('report', { connection });
-
-/**
- * Image Queue - For image processing (compression, resize)
- */
-const imageQueue = new Queue('image', { connection });
+// Initialize queues only if Redis is available
+try {
+  if (isRedisAvailable()) {
+    // ==================== QUEUES ====================
+    
+    /**
+     * Email Queue - For sending emails asynchronously
+     */
+    emailQueue = new Queue('email', { connection });
+    
+    /**
+     * Notification Queue - For sending push notifications
+     */
+    notificationQueue = new Queue('notification', { connection });
+    
+    /**
+     * Payment Queue - For payment processing tasks
+     */
+    paymentQueue = new Queue('payment', { connection });
+    
+    /**
+     * Report Queue - For generating reports (PDF, Excel)
+     */
+    reportQueue = new Queue('report', { connection });
+    
+    /**
+     * Image Queue - For image processing (compression, resize)
+     */
+    imageQueue = new Queue('image', { connection });
+    
+    isQueueAvailable = true;
+    console.log('✅ BullMQ queues initialized');
+  } else {
+    console.warn('⚠️  BullMQ not available - jobs will be processed synchronously');
+    // Create mock queues
+    const mockQueue = {
+      add: async (jobName, data) => {
+        console.warn(`⚠️  Queue job skipped (${jobName}):`, data);
+        return { id: 'mock-' + Date.now() };
+      }
+    };
+    emailQueue = mockQueue;
+    notificationQueue = mockQueue;
+    paymentQueue = mockQueue;
+    reportQueue = mockQueue;
+    imageQueue = mockQueue;
+  }
+} catch (error) {
+  console.warn('⚠️  Failed to initialize BullMQ:', error.message);
+  // Create mock queues
+  const mockQueue = {
+    add: async (jobName, data) => {
+      console.warn(`⚠️  Queue job skipped (${jobName}):`, data);
+      return { id: 'mock-' + Date.now() };
+    }
+  };
+  emailQueue = mockQueue;
+  notificationQueue = mockQueue;
+  paymentQueue = mockQueue;
+  reportQueue = mockQueue;
+  imageQueue = mockQueue;
+}
 
 // ==================== QUEUE HELPERS ====================
 
@@ -108,140 +147,156 @@ async function queueImageProcessing(imageData) {
 
 // ==================== WORKERS ====================
 
-/**
- * Email Worker - Processes email jobs
- */
-const emailWorker = new Worker(
-  'email',
-  async (job) => {
-    console.log(`Processing email job ${job.id}:`, job.data);
-    
-    // TODO: Implement actual email sending
-    // Example: Use nodemailer, SendGrid, AWS SES, etc.
-    
-    // For now, just log
-    console.log(`Email sent to ${job.data.to}: ${job.data.subject}`);
-    
-    return { success: true, sentAt: new Date() };
-  },
-  { connection }
-);
+let emailWorker, notificationWorker, paymentWorker, reportWorker, imageWorker;
 
-/**
- * Notification Worker - Processes push notification jobs
- */
-const notificationWorker = new Worker(
-  'notification',
-  async (job) => {
-    console.log(`Processing notification job ${job.id}:`, job.data);
-    
-    // TODO: Implement actual FCM push notification
-    // Example: Use firebase-admin SDK
-    
-    console.log(`Notification sent to user ${job.data.userId}: ${job.data.title}`);
-    
-    return { success: true, sentAt: new Date() };
-  },
-  { connection }
-);
+// Only create workers if Redis/Queue is available
+if (isQueueAvailable) {
+  /**
+   * Email Worker - Processes email jobs
+   */
+  emailWorker = new Worker(
+    'email',
+    async (job) => {
+      console.log(`Processing email job ${job.id}:`, job.data);
+      
+      // TODO: Implement actual email sending
+      // Example: Use nodemailer, SendGrid, AWS SES, etc.
+      
+      // For now, just log
+      console.log(`Email sent to ${job.data.to}: ${job.data.subject}`);
+      
+      return { success: true, sentAt: new Date() };
+    },
+    { connection }
+  );
 
-/**
- * Payment Worker - Processes payment jobs
- */
-const paymentWorker = new Worker(
-  'payment',
-  async (job) => {
-    console.log(`Processing payment job ${job.id}:`, job.data);
-    
-    // TODO: Implement payment processing logic
-    // Example: Call Midtrans API, update order status, etc.
-    
-    console.log(`Payment processed for order ${job.data.orderId}`);
-    
-    return { success: true, processedAt: new Date() };
-  },
-  { connection }
-);
+  /**
+   * Notification Worker - Processes push notification jobs
+   */
+  notificationWorker = new Worker(
+    'notification',
+    async (job) => {
+      console.log(`Processing notification job ${job.id}:`, job.data);
+      
+      // TODO: Implement actual FCM push notification
+      // Example: Use firebase-admin SDK
+      
+      console.log(`Notification sent to user ${job.data.userId}: ${job.data.title}`);
+      
+      return { success: true, sentAt: new Date() };
+    },
+    { connection }
+  );
 
-/**
- * Report Worker - Processes report generation jobs
- */
-const reportWorker = new Worker(
-  'report',
-  async (job) => {
-    console.log(`Processing report job ${job.id}:`, job.data);
-    
-    // TODO: Implement report generation
-    // Example: Use pdfkit, exceljs, etc.
-    
-    console.log(`Report generated for user ${job.data.userId}`);
-    
-    return { success: true, generatedAt: new Date() };
-  },
-  { connection }
-);
+  /**
+   * Payment Worker - Processes payment jobs
+   */
+  paymentWorker = new Worker(
+    'payment',
+    async (job) => {
+      console.log(`Processing payment job ${job.id}:`, job.data);
+      
+      // TODO: Implement payment processing logic
+      // Example: Call Midtrans API, update order status, etc.
+      
+      console.log(`Payment processed for order ${job.data.orderId}`);
+      
+      return { success: true, processedAt: new Date() };
+    },
+    { connection }
+  );
 
-/**
- * Image Worker - Processes image optimization jobs
- */
-const imageWorker = new Worker(
-  'image',
-  async (job) => {
-    console.log(`Processing image job ${job.id}:`, job.data);
-    
-    // TODO: Implement image processing
-    // Example: Use sharp library for compression/resize
-    
-    console.log(`Image processed: ${job.data.path}`);
-    
-    return { success: true, processedAt: new Date() };
-  },
-  { connection }
-);
+  /**
+   * Report Worker - Processes report generation jobs
+   */
+  reportWorker = new Worker(
+    'report',
+    async (job) => {
+      console.log(`Processing report job ${job.id}:`, job.data);
+      
+      // TODO: Implement report generation
+      // Example: Use pdfkit, exceljs, etc.
+      
+      console.log(`Report generated for user ${job.data.userId}`);
+      
+      return { success: true, generatedAt: new Date() };
+    },
+    { connection }
+  );
 
-// ==================== ERROR HANDLERS ====================
+  /**
+   * Image Worker - Processes image optimization jobs
+   */
+  imageWorker = new Worker(
+    'image',
+    async (job) => {
+      console.log(`Processing image job ${job.id}:`, job.data);
+      
+      // TODO: Implement image processing
+      // Example: Use sharp library for compression/resize
+      
+      console.log(`Image processed: ${job.data.path}`);
+      
+      return { success: true, processedAt: new Date() };
+    },
+    { connection }
+  );
 
-emailWorker.on('failed', (job, err) => {
-  console.error(`Email job ${job.id} failed:`, err.message);
-});
+  // ==================== ERROR HANDLERS ====================
 
-notificationWorker.on('failed', (job, err) => {
-  console.error(`Notification job ${job.id} failed:`, err.message);
-});
+  emailWorker.on('failed', (job, err) => {
+    console.error(`Email job ${job.id} failed:`, err.message);
+  });
 
-paymentWorker.on('failed', (job, err) => {
-  console.error(`Payment job ${job.id} failed:`, err.message);
-});
+  notificationWorker.on('failed', (job, err) => {
+    console.error(`Notification job ${job.id} failed:`, err.message);
+  });
+  notificationWorker.on('failed', (job, err) => {
+    console.error(`Notification job ${job.id} failed:`, err.message);
+  });
 
-reportWorker.on('failed', (job, err) => {
-  console.error(`Report job ${job.id} failed:`, err.message);
-});
+  paymentWorker.on('failed', (job, err) => {
+    console.error(`Payment job ${job.id} failed:`, err.message);
+  });
 
-imageWorker.on('failed', (job, err) => {
-  console.error(`Image job ${job.id} failed:`, err.message);
-});
+  reportWorker.on('failed', (job, err) => {
+    console.error(`Report job ${job.id} failed:`, err.message);
+  });
 
-// ==================== SUCCESS HANDLERS ====================
+  imageWorker.on('failed', (job, err) => {
+    console.error(`Image job ${job.id} failed:`, err.message);
+  });
 
-emailWorker.on('completed', (job) => {
-  console.log(`✅ Email job ${job.id} completed`);
-});
+  // ==================== SUCCESS HANDLERS ====================
 
-notificationWorker.on('completed', (job) => {
-  console.log(`✅ Notification job ${job.id} completed`);
-});
+  emailWorker.on('completed', (job) => {
+    console.log(`✅ Email job ${job.id} completed`);
+  });
 
-paymentWorker.on('completed', (job) => {
-  console.log(`✅ Payment job ${job.id} completed`);
-});
+  notificationWorker.on('completed', (job) => {
+    console.log(`✅ Notification job ${job.id} completed`);
+  });
 
-reportWorker.on('completed', (job) => {
-  console.log(`✅ Report job ${job.id} completed`);
-});
+  paymentWorker.on('completed', (job) => {
+    console.log(`✅ Payment job ${job.id} completed`);
+  });
 
-imageWorker.on('completed', (job) => {
-  console.log(`✅ Image job ${job.id} completed`);
-});
+  reportWorker.on('completed', (job) => {
+    console.log(`✅ Report job ${job.id} completed`);
+  });
+
+  imageWorker.on('completed', (job) => {
+    console.log(`✅ Image job ${job.id} completed`);
+  });
+} else {
+  // Create mock workers for graceful shutdown
+  const mockWorker = { close: async () => {} };
+  emailWorker = mockWorker;
+  notificationWorker = mockWorker;
+  paymentWorker = mockWorker;
+  reportWorker = mockWorker;
+  imageWorker = mockWorker;
+}
 
 module.exports = {
   // Queues

@@ -7,26 +7,90 @@ const redisConfig = {
   port: config.redis?.port || process.env.REDIS_PORT || 6379,
   password: config.redis?.password || process.env.REDIS_PASSWORD || undefined,
   retryStrategy: (times) => {
-    const delay = Math.min(times * 50, 2000);
+    // Stop retrying after 3 attempts
+    if (times > 3) {
+      console.warn('⚠️  Redis connection failed after 3 attempts - running without cache');
+      return null; // Stop retrying
+    }
+    const delay = Math.min(times * 50, 500);
     return delay;
   },
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: 1,
+  enableReadyCheck: false,
+  lazyConnect: true, // Don't connect immediately
 };
 
 // Create Redis client
-const redis = new Redis(redisConfig);
+let redis;
+let isRedisAvailable = false;
+let connectionAttempted = false;
 
-// Redis event handlers
-redis.on('connect', () => {
-  console.log('✅ Redis connected successfully');
-});
+async function initializeRedis() {
+  if (connectionAttempted) return;
+  connectionAttempted = true;
 
-redis.on('error', (err) => {
-  console.error('❌ Redis connection error:', err.message);
-});
+  try {
+    redis = new Redis(redisConfig);
+    
+    // Redis event handlers
+    redis.on('connect', () => {
+      console.log('✅ Redis connected successfully');
+      isRedisAvailable = true;
+    });
 
-redis.on('ready', () => {
-  console.log('✅ Redis is ready to use');
+    redis.on('error', (err) => {
+      // Only log first error to avoid spam
+      if (isRedisAvailable) {
+        console.error('⚠️  Redis connection lost:', err.message);
+      }
+      isRedisAvailable = false;
+    });
+
+    redis.on('ready', () => {
+      console.log('✅ Redis is ready to use');
+      isRedisAvailable = true;
+    });
+    
+    // Try to connect with timeout
+    await Promise.race([
+      redis.connect(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 2000))
+    ]);
+    
+  } catch (error) {
+    console.warn('⚠️  Redis not available - running without cache');
+    isRedisAvailable = false;
+    
+    // Disconnect failed client
+    if (redis) {
+      try {
+        await redis.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+    }
+    
+    // Create mock redis client
+    redis = {
+      get: async () => null,
+      set: async () => 'OK',
+      del: async () => 0,
+      setex: async () => 'OK',
+      expire: async () => 1,
+      ttl: async () => -1,
+      exists: async () => 0,
+      keys: async () => [],
+      quit: async () => {},
+      disconnect: async () => {},
+      connect: async () => {},
+      ping: async () => { throw new Error('Redis not available'); },
+    };
+  }
+}
+
+// Initialize Redis on module load
+initializeRedis().catch(() => {
+  // Already handled in function
 });
 
 /**
@@ -39,6 +103,7 @@ class CacheService {
    * @returns {Promise<any|null>} - Cached data or null
    */
   static async get(key) {
+    if (!isRedisAvailable) return null;
     try {
       const data = await redis.get(key);
       if (!data) return null;
@@ -63,6 +128,7 @@ class CacheService {
    * @returns {Promise<boolean>} - Success status
    */
   static async set(key, value, ttl = 3600) {
+    if (!isRedisAvailable) return false;
     try {
       const serialized = typeof value === 'string' ? value : JSON.stringify(value);
       await redis.set(key, serialized, 'EX', ttl);
@@ -79,6 +145,7 @@ class CacheService {
    * @returns {Promise<boolean>} - Success status
    */
   static async del(key) {
+    if (!isRedisAvailable) return false;
     try {
       await redis.del(key);
       return true;
@@ -94,6 +161,7 @@ class CacheService {
    * @returns {Promise<number>} - Number of keys deleted
    */
   static async delPattern(pattern) {
+    if (!isRedisAvailable) return 0;
     try {
       const keys = await redis.keys(pattern);
       if (keys.length === 0) return 0;
@@ -112,6 +180,7 @@ class CacheService {
    * @returns {Promise<boolean>} - Exists status
    */
   static async exists(key) {
+    if (!isRedisAvailable) return false;
     try {
       const result = await redis.exists(key);
       return result === 1;
@@ -236,4 +305,5 @@ class CacheService {
 module.exports = {
   redis,
   CacheService,
+  isRedisAvailable: () => isRedisAvailable,
 };
